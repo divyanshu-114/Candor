@@ -1,0 +1,15 @@
+{
+  "questions": 27,
+  "computed": 27,
+  "resumed_from_existing": 0,
+  "wall_seconds": 900.369,
+  "mode": "full",
+  "workers": 4,
+  "retrieval_only": false,
+  "degraded_questions": 27,
+  "prompt_tokens": 33208,
+  "completion_tokens": 5350,
+  "calls": 39,
+  "cache_hits": 15,
+  "rate_limit_hits": 53
+}

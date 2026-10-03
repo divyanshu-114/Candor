@@ -1,0 +1,27 @@
+MEM-TR-20: What did I dictate to Sarah Patel on Sep 10, and did it go out?  (as of 2026-09-18T18:00:00-07:00)
+rank  unit id                    source     speaker              time                       snippet  marks
+   1  CDX-F1                    codex      -                  2026-09-09T20:46:44-07:00  user: scripts/export_routes.py is a mess, it's one giant loop I wrote at midnight. Can you refactor  
+   2  EM-0910-ACME-EXT-R        email      -                  2026-09-10T17:30:12-07:00  From: Sarah Patel <sarah.patel@acmefreight.example.com> To: Alex Rivera <alex@brightline.example.com NEEDED ALSO
+   3  CDX-0912                  codex      -                  2026-09-12T11:39:26-07:00  user: I want to prototype an ETA predictor for Route Planner. Right now all I have is the CSV export 
+   4  MTG-0916-GONOGO#0062      meeting    Sarah Kim          2026-09-16T15:13:39.200000-07:00 They're good. I have them. Spacing's called out this time.                                           
+   5  SL-F-0138                 slack      Alex Rivera        2026-09-15T14:20:36-07:00  Pricing proposal went out to Sarah Patel at Acme this afternoon, Marcus cc'd.                        
+   6  MTG-0909-ACME#0184        meeting    Sarah Patel        2026-09-09T11:46:55.600000-07:00 And on our side we'll figure out who from Stockton should be in the first group. I'll talk to their  
+   7  MTG-0916-GONOGO#0071      meeting    John Okafor        2026-09-16T15:15:34.200000-07:00 No, it's a good thing, sort of. Sarah Patel — Acme Sarah, not you, Sarah —                           
+   8  MTG-0916-GONOGO#0073      meeting    John Okafor        2026-09-16T15:15:47.300000-07:00 Sarah Patel asked for a training week with their dispatchers before go-live.                         
+   9  MTG-0916-GONOGO#0089      meeting    John Okafor        2026-09-16T15:19:12.600000-07:00 Yes. Good. Okay. So, officially, launch is October 21st. I'll let Sarah Patel know we're good with t 
+  10  MTG-0916-GONOGO#0108      meeting    Sarah Kim          2026-09-16T15:23:06.300000-07:00 Split them out. Otherwise we're gonna ship something by accident.                                    
+  11  EM-0916-ACME-ACK          email      -                  2026-09-16T08:50:04-07:00  From: Sarah Patel <sarah.patel@acmefreight.example.com> To: Alex Rivera <alex@brightline.example.com 
+  12  SL-F-0205                 slack      Leah Brooks        2026-09-18T17:20:29-07:00  Team photo turned out great 📸 https://photos.brightline.example.com/team-sep-2026                    
+  13  MTG-0916-GONOGO#0090      meeting    Dana Lee           2026-09-16T15:19:24.100000-07:00 Sorry, I cut out for a second — did you say the 21st?                                                
+  14  MTG-0915-SALESPIPE#0085   meeting    Marcus Webb        2026-09-15T11:17:16.100000-07:00 Yeah, and I'm cc'd, so I'll see it go out.                                                           
+  15  EM-0915-CAL-UPD           email      -                  2026-09-15T09:30:00-07:00  From: Google Calendar <calendar-notification@google.example.com> To: Alex Rivera <alex@brightline.ex 
+  16  MTG-0916-GONOGO#0107      meeting    Dana Lee           2026-09-16T15:23:00.700000-07:00 Should I keep the dark variants in the v2 Figma file, or split them out?                             
+  17  EM-F-046                  email      -                  2026-09-18T09:15:22-07:00  From: Google Calendar <calendar-notification@google.example.com> To: Alex Rivera <alex@brightline.ex 
+  18  SL-F-0035                 slack      Sarah Kim          2026-09-09T11:30:19-07:00  RP-229 is cosmetic, not blocking Sep 30. I'll pick it up anyway since it's small.                    
+  19  MTG-0916-GONOGO#0007      meeting    John Okafor        2026-09-16T15:01:11.400000-07:00 Loud and clear. Okay. So. Go/no-go for Route Planner v2. We've got forty-five minutes on the calenda 
+  20  MTG-0916-GONOGO#0088      meeting    Priya Nair         2026-09-16T15:19:02.800000-07:00 I'll need to re-baseline the QA calendar then. The final regression pass moves out a week, and I'll  
+
+Needed groups:
+  group 1: MISSING
+  group 2: best rank 2
+Missing needed groups: 1

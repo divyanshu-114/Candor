@@ -1,0 +1,26 @@
+MEM-TR-21: Why did the launch slip from September 30?  (as of 2026-09-18T18:00:00-07:00)
+rank  unit id                    source     speaker              time                       snippet  marks
+   1  MTG-0908-PLAN#0073        meeting    Alex Rivera        2026-09-08T10:17:58.800000-07:00 Great. September 30 it is. That's a Tuesday — no, wait. It's a Wednesday. September 30 is a Wednesda 
+   2  MTG-0908-PLAN#0076        meeting    John Okafor        2026-09-08T10:18:28.800000-07:00 And I'll put it in the board deck. Launch September 30.                                              
+   3  MTG-0908-PLAN#0069        meeting    John Okafor        2026-09-08T10:17:13.400000-07:00 Okay. Then let's lock September 30 for Route Planner v2 launch.                                      
+   4  DCT-F-003                 dictation  -                  2026-09-08T11:22:54-07:00  Route Planner v2 launch checklist Target launch: September 30 - Regression test plan (Priya), due Fr 
+   5  MTG-0909-ACME#0064        meeting    Marcus Webb        2026-09-09T11:17:07.500000-07:00 We can do September 30. Tomorrow's a little tight.                                                   
+   6  MTG-0908-PLAN#0140        meeting    Alex Rivera        2026-09-08T10:30:33.400000-07:00 Okay. Let me just recap so it's in the, uh, in the recording. Launch is September 30 for Route Plann 
+   7  CGPT-0913-BOARD#m3        chatgpt    user               2026-09-13T14:11:40-07:00  yes. the angle I want: expansion is the story. customers add trucks, we grow with them. and we're ab 
+   8  MTG-0911-DESIGN#0094      meeting    Sarah Kim          2026-09-11T13:25:02.800000-07:00 The other scope thing is bulk re-optimize. If that slips, it slips. It's a nice-to-have.             
+   9  MTG-0909-ACME#0070        meeting    Alex Rivera        2026-09-09T11:18:25-07:00  So we just locked the date internally, actually, like yesterday. Route Planner v2 launches September 
+  10  EM-F-013                  email      -                  2026-09-10T07:00:03-07:00  From: Product Ops Digest <digest@productopsdigest.example.com> To: Alex Rivera <alex@brightline.exam 
+  11  MTG-0909-ACME#0195        meeting    Marcus Webb        2026-09-09T11:49:06.100000-07:00 Yeah, that actually matters. If this slips past November, we're in next year's budget, and that's a  
+  12  DCT-F-007                 dictation  -                  2026-09-09T08:20:15-07:00  Hi there, I need to reschedule my cleaning this Thursday, September 10 at 8:30. Could we move it to  
+  13  MTG-0908-PLAN#0060        meeting    John Okafor        2026-09-08T10:15:09-07:00  Okay. So let's talk date. Because, honestly, that's why I'm here.                                    
+  14  MTG-0909-ACME#0090        meeting    Sarah Patel        2026-09-09T11:23:16.300000-07:00 So — let me just be direct, because I think that's easier. The last proposal was per shipment, and I 
+  15  MTG-0908-PLAN#0035        meeting    Alex Rivera        2026-09-08T10:09:07.200000-07:00 Okay, great. So Priya, regression test plan, due Friday, September 11. I'm writing it down.          
+  16  MTG-0908-PLAN#0011        meeting    John Okafor        2026-09-08T10:02:49.400000-07:00 That's a good weekend, honestly. We tried to take the kids camping and it rained. In September. In C 
+  17  MTG-0911-DESIGN#0095      meeting    Alex Rivera        2026-09-11T13:25:10.800000-07:00 Yeah, that one's fine to slip. Nobody's buying because of bulk re-optimize.                          
+  18  EM-F-047                  email      -                  2026-09-18T12:30:47-07:00  From: Expensely <no-reply@expensely.example.com> To: Alex Rivera <alex@brightline.example.com> Subje 
+  19  EM-F-035                  email      -                  2026-09-16T10:20:13-07:00  From: Expensely <no-reply@expensely.example.com> To: Alex Rivera <alex@brightline.example.com> Subje 
+  20  SL-F-0011                 slack      Sarah Kim          2026-09-08T11:12:26-07:00  Planning recap: we're locking Sep 30 for the Route Planner v2 launch 🚀 Owners for the final stretch  
+
+Needed groups:
+  group 1: MISSING
+Missing needed groups: 1

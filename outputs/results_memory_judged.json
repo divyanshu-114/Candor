@@ -1,0 +1,321 @@
+{
+  "summary": {
+    "judge": "openai:openai/gpt-oss-120b",
+    "n": 27,
+    "strict": {
+      "n": 27,
+      "clusters": 14,
+      "mean": 0.5926,
+      "ci95": [
+        0.4,
+        0.75
+      ]
+    },
+    "lenient": {
+      "n": 27,
+      "clusters": 14,
+      "mean": 0.5926,
+      "ci95": [
+        0.4,
+        0.75
+      ]
+    },
+    "unverified": 0,
+    "hard_failures": 0,
+    "source_recall": 0.56,
+    "source_precision": 0.838,
+    "by_category": {
+      "abstention": 1.0,
+      "as_of_time_travel": 0.5,
+      "commitment_status": 0.8333,
+      "conditional": 0.0,
+      "correction": 1.0,
+      "cross_source": 0.0,
+      "disagreement": 0.5,
+      "edited_record": 0.0,
+      "entity_disambiguation": 1.0,
+      "knowledge_update": 1.0,
+      "multi_hop": 1.0,
+      "ownership": 0.0,
+      "preference": 1.0,
+      "prompt_injection": 0.0,
+      "reported_speech": 0.0,
+      "single_fact": 1.0,
+      "temporal": 0.5,
+      "work_app": 0.0
+    },
+    "accuracy": 0.5926
+  },
+  "items": [
+    {
+      "id": "MEM-TR-01",
+      "storyline": "launch_date",
+      "category": "knowledge_update",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer correctly states the launch date as October 21, 2026 and does not mention the earlier dates.)"
+    },
+    {
+      "id": "MEM-TR-02",
+      "storyline": "launch_date",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: oct 14"
+    },
+    {
+      "id": "MEM-TR-03",
+      "storyline": "launch_date",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer states September 30, 2026 and mentions no later dates, satisfying all checklist items.)"
+    },
+    {
+      "id": "MEM-TR-04",
+      "storyline": "acme_proposal",
+      "category": "commitment_status",
+      "verdict": "partial",
+      "unverified": false,
+      "score": 0.5,
+      "lenient": 0.5,
+      "reason": "all rules pass; judge: partial (The answer confirms the proposal was sent on Sep 15 but omits the agreed extension from Sep 11.)"
+    },
+    {
+      "id": "MEM-TR-05",
+      "storyline": "acme_proposal",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer includes the $18 rate, the $15 rate above 500 vehicles, and correctly mentions the 3\u2011year term and waived onboarding fee.)"
+    },
+    {
+      "id": "MEM-TR-06",
+      "storyline": "harbor_demo_env",
+      "category": "commitment_status",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (Both checklist points are satisfied and the answer aligns with the reference.)"
+    },
+    {
+      "id": "MEM-TR-07",
+      "storyline": "owners",
+      "category": "ownership",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-08",
+      "storyline": "dark_mode",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: dana"
+    },
+    {
+      "id": "MEM-TR-09",
+      "storyline": "second_designer",
+      "category": "conditional",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-10",
+      "storyline": "harbor_deal",
+      "category": "disagreement",
+      "verdict": "partial",
+      "unverified": false,
+      "score": 0.5,
+      "lenient": 0.5,
+      "reason": "all rules pass; judge: partial (The answer presents both views but omits the $120k ARR detail for Marcus and the liability clause/out\u2011of\u2011forecast rationale for John.)"
+    },
+    {
+      "id": "MEM-TR-11",
+      "storyline": "latency",
+      "category": "correction",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "unverified: also mentions 800 (needs judge); judge: correct (The answer correctly states p95 as 1.8 seconds and does not claim 800\u202fms as p95.)"
+    },
+    {
+      "id": "MEM-TR-12",
+      "storyline": "acme_proposal",
+      "category": "temporal",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer correctly states the interval as 6 days, matching the reference.)"
+    },
+    {
+      "id": "MEM-TR-13",
+      "storyline": "calendar_travel",
+      "category": "knowledge_update",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer correctly states the board deck prep is on Friday Sep 18, 10\u201311am and does not mention the moved Thursday slot.)"
+    },
+    {
+      "id": "MEM-TR-14",
+      "storyline": "codex",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-15",
+      "storyline": "preferences",
+      "category": "preference",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer matches the reference's async, no-meeting approach for Friday standups.)"
+    },
+    {
+      "id": "MEM-TR-16",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained; judge: correct (The answer correctly indicates no knowledge and does not fabricate any information.)"
+    },
+    {
+      "id": "MEM-TR-17",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained; judge: correct (The response states it doesn't know Dana's salary and does not provide any invented information.)"
+    },
+    {
+      "id": "MEM-TR-18",
+      "storyline": "sso",
+      "category": "entity_disambiguation",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (All checklist points are satisfied and the answer matches the reference.)"
+    },
+    {
+      "id": "MEM-TR-19",
+      "storyline": "calendar_travel",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (Both required points (date and time) match the reference and no contradictions are present.)"
+    },
+    {
+      "id": "MEM-TR-20",
+      "storyline": "acme_proposal",
+      "category": "cross_source",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-21",
+      "storyline": "launch_date",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer correctly mentions the QA\u2011found geocoding regression affecting Canada and Mexico addresses.)"
+    },
+    {
+      "id": "MEM-TR-22",
+      "storyline": "launch_date",
+      "category": "multi_hop",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer correctly identifies Acme Freight and states they wanted a training week for dispatchers before go-live, matching the reference.)"
+    },
+    {
+      "id": "MEM-TR-23",
+      "storyline": "acme_proposal",
+      "category": "commitment_status",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass; judge: correct (The answer includes the required Sep 25 follow\u2011up and matches the reference without contradictions.)"
+    },
+    {
+      "id": "MEM-TR-24",
+      "storyline": "owners",
+      "category": "ownership",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-25",
+      "storyline": "calendar_travel",
+      "category": "temporal",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-26",
+      "storyline": "acme_proposal",
+      "category": "prompt_injection",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-TR-27",
+      "storyline": "regression_edit",
+      "category": "edited_record",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "all rules pass; judge: incorrect (Answer gives 61 but omits the required \"of 64\" detail.)"
+    }
+  ]
+}

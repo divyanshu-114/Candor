@@ -1,0 +1,27 @@
+MEM-TR-12: How many days after the Acme call did I send the pricing proposal?  (as of 2026-09-18T18:00:00-07:00)
+rank  unit id                    source     speaker              time                       snippet  marks
+   1  MTG-0909-ACME#0095        meeting    Marcus Webb        2026-09-09T11:24:48.600000-07:00 How many vehicles are we talking about? I want to make sure we're sizing this right, because I think 
+   2  MTG-0909-ACME#0076        meeting    Alex Rivera        2026-09-09T11:19:43.700000-07:00 How many dispatchers are at Stockton?                                                                
+   3  MTG-0909-ACME#0179        meeting    Alex Rivera        2026-09-09T11:45:51-07:00  Yeah. So, from our side. I'll send you the revised pricing proposal by Friday. Per vehicle, per mont 
+   4  CGPT-0909-PRICING#m5      chatgpt    user               2026-09-09T08:55:48-07:00  good point on marginal tiers, that's what I'd want. what should I ask on the call so I can build the 
+   5  MTG-0909-ACME#0143        meeting    Chris Hale         2026-09-09T11:37:04.400000-07:00 Appreciate that. Honestly. You'd be surprised how many vendors just say yes to everything.           
+   6  MTG-0909-ACME#0148        meeting    Marcus Webb        2026-09-09T11:38:19.600000-07:00 Yep, we've got a security overview doc. I'll send it to you after this.                              
+   7  MTG-0909-ACME#0182        meeting    Marcus Webb        2026-09-09T11:46:29.500000-07:00 And I'll send Chris the security overview today, and once you've had a chance to look at the proposa 
+   8  SL-F-0036                 slack      Marcus Webb        2026-09-09T11:58:41-07:00  Good call with Acme. Sarah Patel's team is engaged. Next step on our side is the revised pricing pro 
+   9  CGPT-0909-PRICING#m6      chatgpt    assistant          2026-09-09T08:56:30-07:00  Questions that directly feed the proposal: - **Fleet size today and in 12 months**: how many vehicle 
+  10  MTG-0909-ACME#0018        meeting    Marcus Webb        2026-09-09T11:04:50.300000-07:00 We'll take it. So, quick agenda, and tell us if you want to change anything. We wanted to get your r 
+  11  MTG-0909-ACME#0036        meeting    Alex Rivera        2026-09-09T11:09:29.500000-07:00 And on ETAs, we rebuilt how we calculate them. We're using historical route data now, like how long  
+  12  MTG-0910-1ON1#0062        meeting    Alex Rivera        2026-09-10T16:49:13.700000-07:00 Okay. I'll find someone and send you a proposal.                                                     
+  13  MTG-0910-1ON1#0065        meeting    Alex Rivera        2026-09-10T16:49:52-07:00  I said, I'll find a contractor for the marketing site and send you a proposal.                       
+  14  MTG-0909-ACME#0183        meeting    Chris Hale         2026-09-09T11:46:37-07:00  Sounds good. And I'll send over the telematics details.                                              
+  15  EM-0910-ACME-EXT          email      -                  2026-09-10T16:05:30-07:00  From: Alex Rivera <alex@brightline.example.com> To: Sarah Patel <sarah.patel@acmefreight.example.com 
+  16  EM-0916-ACME-ACK          email      -                  2026-09-16T08:50:04-07:00  From: Sarah Patel <sarah.patel@acmefreight.example.com> To: Alex Rivera <alex@brightline.example.com 
+  17  MTG-0909-ACME#0180        meeting    Sarah Patel        2026-09-09T11:46:01.800000-07:00 Friday's great. Send it to me directly and I'll get it in front of our CFO.                          
+  18  MTG-0911-DESIGN#0044      meeting    Alex Rivera        2026-09-11T13:12:56.200000-07:00 Can we say how many results are hidden? Like "twelve routes hidden by filters"?                      
+  19  EM-0910-ACME-EXT-R        email      -                  2026-09-10T17:30:12-07:00  From: Sarah Patel <sarah.patel@acmefreight.example.com> To: Alex Rivera <alex@brightline.example.com 
+  20  MTG-0909-ACME#0153        meeting    Chris Hale         2026-09-09T11:39:20.800000-07:00 I'll send it over. We're on one of the big ones. They have an API, it's — it's decent.               
+
+Needed groups:
+  group 1: MISSING
+  group 2: MISSING
+Missing needed groups: 1, 2

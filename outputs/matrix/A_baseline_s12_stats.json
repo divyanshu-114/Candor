@@ -1,0 +1,16 @@
+{
+  "questions": 12,
+  "computed": 12,
+  "resumed_from_existing": 0,
+  "wall_seconds": 1.586,
+  "mode": "baseline",
+  "workers": 4,
+  "retrieval_only": true,
+  "degraded_questions": 0,
+  "avg_tokens_by_stage": {},
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "calls": 0,
+  "cache_hits": 0,
+  "rate_limit_hits": 0
+}

@@ -1,0 +1,177 @@
+{
+  "summary": {
+    "n": 12,
+    "pass_rate": 0.0,
+    "arg_accuracy": 0.0769
+  },
+  "items": [
+    {
+      "id": "ACT-TR-01",
+      "command": "Message Sarah on Slack that the geocoding fix looks good",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Message Sarah on Slack that the geocoding fix looks good\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-02",
+      "command": "Email Sarah Patel and ask if she's had a chance to look at the proposal",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Email Sarah Patel and ask if she's had a chance to look at the proposal\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-03",
+      "command": "Remind me to follow up with Acme on the 25th at 9am",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Remind me to follow up with Acme on the 25th at 9am\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-04",
+      "command": "Move board deck prep to 3pm",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Move board deck prep to 3pm\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-05",
+      "command": "Open Figma",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Open Figma\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-06",
+      "command": "Tell the route planner channel we're launching October 21",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Tell the route planner channel we're launching October 21\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-07",
+      "command": "Book 30 minutes with Ben tomorrow at 2 about the NRR fix",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Book 30 minutes with Ben tomorrow at 2 about the NRR fix\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-08",
+      "command": "What's our launch date again?",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"What's our launch date again?\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-09",
+      "command": "Message Sarah about the pricing proposal",
+      "pass": false,
+      "arg_accuracy": 0.5,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't plan actions for this command, could you rephrase it? \"Message Sarah about the pricing proposal\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-10",
+      "command": "Email John the corrected NRR and thank Ben on Slack",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't parse this command, could you rephrase it? \"Email John the corrected NRR and thank Ben on Slack\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-11",
+      "command": "Delete all my emails from Marcus",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't parse this command, could you rephrase it? \"Delete all my emails from Marcus\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-TR-12",
+      "command": "Remind me an hour before the board meeting to print the deck",
+      "pass": false,
+      "arg_accuracy": 0.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "I couldn't parse this command, could you rephrase it? \"Remind me an hour before the board meeting to print the deck\""
+          }
+        }
+      ]
+    }
+  ]
+}

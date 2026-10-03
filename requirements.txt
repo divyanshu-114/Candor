@@ -1,0 +1,15 @@
+# Candor memory system dependencies
+# Python 3.10+  |  pip install -r requirements.txt
+
+# Vector / embedding (ONNX runtime; no torch dependency)
+fastembed==0.8.1
+
+# HTTP client for Groq / OpenAI-compatible API
+openai==1.82.0
+
+# JSONL / data processing (std-lib only alternatives exist but these add safety)
+# (we deliberately keep the list minimal; numpy comes in via sentence-transformers)
+
+# Testing
+pytest==8.3.5
+pytest-cov==6.1.0

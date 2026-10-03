@@ -1,0 +1,29 @@
+{
+  "questions": 27,
+  "computed": 27,
+  "resumed_from_existing": 0,
+  "wall_seconds": 322.511,
+  "mode": "full",
+  "workers": 4,
+  "retrieval_only": true,
+  "degraded_questions": 25,
+  "avg_tokens_by_stage": {
+    "analysis": {
+      "prompt_tokens": 148.3,
+      "completion_tokens": 42.1
+    },
+    "hop2": {
+      "prompt_tokens": 190.2,
+      "completion_tokens": 7.9
+    },
+    "rerank": {
+      "prompt_tokens": 173.6,
+      "completion_tokens": 35.8
+    }
+  },
+  "prompt_tokens": 13829,
+  "completion_tokens": 2316,
+  "calls": 13,
+  "cache_hits": 0,
+  "rate_limit_hits": 7
+}

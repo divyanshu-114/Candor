@@ -1,0 +1,28 @@
+MEM-TR-10: Is Harbor Logistics going to sign this year?  (as of 2026-09-18T18:00:00-07:00)
+rank  unit id                    source     speaker              time                       snippet  marks
+   1  SL-DM-JA-0914-1           slack      John Okafor        2026-09-14T18:21:00-07:00  Rachel flagged Harbor's ask for an uncapped liability clause. I don't think they sign this year. Kee NEEDED
+   2  CAL-HARBOR-DEMO           calendar   -                  2026-09-11T10:45:00-07:00  Summary: Harbor Logistics demo Time: 2026-09-14T11:00:00-07:00 to 2026-09-14T12:00:00-07:00 Location 
+   3  SL-SALES-0911-1           slack      Marcus Webb        2026-09-11T11:03:00-07:00  Harbor is basically done. Mike told me they'll sign in Q4, $120k ARR.                                NEEDED
+   4  SL-F-0095                 slack      Sarah Kim          2026-09-11T16:49:02-07:00  this is going in the postmortem                                                                      
+   5  SL-F-0084                 slack      Alex Rivera        2026-09-11T10:45:09-07:00  Scratch the Harbor demo env. Harbor pushed the demo to October.                                      
+   6  MTG-0909-ACME#0134        meeting    Sarah Patel        2026-09-09T11:35:13.400000-07:00 Oh — and that's actually the thing I wanted to ask, and Chris is going to kill me if I don't. SSO. D 
+   7  MTG-0909-ACME#0114        meeting    Marcus Webb        2026-09-09T11:30:16.800000-07:00 And timing on your side — like, what does your approval process look like for something like this? W 
+   8  MTG-0909-ACME#0124        meeting    Sarah Patel        2026-09-09T11:32:45.100000-07:00 It's not a hard wall, it's just — it's a lot easier if it's in this year's numbers.                  
+   9  MTG-0917-RECRUIT#0007     meeting    Leah Brooks        2026-09-17T15:01:41.200000-07:00 So, my screen, I'll go fast. Jordan's been at a logistics-adjacent company for about four years, mos 
+  10  MTG-0915-SALESPIPE#0067   meeting    Marcus Webb        2026-09-15T11:14:25.800000-07:00 And then the one we lost. Sagebrush Logistics.                                                       
+  11  MTG-0909-ACME#0016        meeting    Alex Rivera        2026-09-09T11:04:09.500000-07:00 Well, we'll try to make it worth it. Thanks for making the time, I know it's — it's a lot of calls t 
+  12  MTG-0909-ACME#0106        meeting    Sarah Patel        2026-09-09T11:28:19.300000-07:00 Multi-year is probably fine. We'd want some kind of out if it's really not working, but in principle 
+  13  MTG-0909-ACME#0195        meeting    Marcus Webb        2026-09-09T11:49:06.100000-07:00 Yeah, that actually matters. If this slips past November, we're in next year's budget, and that's a  
+  14  CAL-F-15                  calendar   -                  2026-09-14T10:00:00-07:00  Summary: Offsite logistics check Time: 2026-09-18T13:00:00-07:00 to 2026-09-18T13:30:00-07:00 Locati 
+  15  SL-DM-AM-0909-1           slack      Marcus Webb        2026-09-09T15:02:00-07:00  Can you get me a demo environment for Harbor by Monday?                                              
+  16  SL-DM-AM-0911-1           slack      Marcus Webb        2026-09-11T10:40:00-07:00  Harbor pushed the demo to October, no need for the env Monday.                                       
+  17  SL-SALES-0917-1           slack      Marcus Webb        2026-09-17T10:15:00-07:00  Still think Harbor closes in Q4, legal stuff is normal back-and-forth.                               NEEDED
+  18  SL-F-0045                 slack      Alex Rivera        2026-09-09T15:14:48-07:00  Another one: Marcus needs a Harbor demo environment by Monday. Can you spin one up?                  
+  19  MTG-0915-SALESPIPE#0040   meeting    Marcus Webb        2026-09-15T11:08:24.500000-07:00 If the questionnaire goes clean, I think we sign mid-November. Realistically December.               
+  20  MTG-0916-GONOGO#0021      meeting    Priya Nair         2026-09-16T15:05:04.900000-07:00 Geocoding is green. The fix is verified. I'm comfortable signing off on it.                          
+
+Needed groups:
+  group 1: best rank 3
+  group 2: best rank 17
+  group 3: best rank 1
+Missing needed groups: none

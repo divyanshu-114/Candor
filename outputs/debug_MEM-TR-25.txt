@@ -1,0 +1,27 @@
+MEM-TR-25: What's on my calendar the day I fly to Denver?  (as of 2026-09-18T18:00:00-07:00)
+rank  unit id                    source     speaker              time                       snippet  marks
+   1  CGPT-0917-DENVER#m3       chatgpt    user               2026-09-17T21:07:48-07:00  most people fly in the night before, landing pretty late. so Wed night is just a quick bite, thursda 
+   2  CDX-0912                  codex      -                  2026-09-12T11:39:26-07:00  user: I want to prototype an ETA predictor for Route Planner. Right now all I have is the CSV export 
+   3  CAL-OFFSITE               calendar   -                  2026-09-02T16:40:00-07:00  Summary: Product offsite – Denver Time: 2026-09-24 to 2026-09-26 Location: Denver, CO Attendees: ale 
+   4  SL-F-0187                 slack      Priya Nair         2026-09-18T09:20:14-07:00  Regression day 2 in progress, nothing new red. Today: finish the pass and update the test calendar f 
+   5  CGPT-0917-DENVER#m1       chatgpt    user               2026-09-17T21:01:26-07:00  Our product team has an offsite in Denver, Sep 24–25. We're staying at The Crawford Hotel at Denver  
+   6  MTG-0914-STANDUP#0011     meeting    Ben Carter         2026-09-14T09:32:17.600000-07:00 That's a Ben thing, I heard my name.                                                                 
+   7  MTG-0917-RECRUIT#0042     meeting    Alex Rivera        2026-09-17T15:10:14.800000-07:00 So, not Wednesday next week. Wednesday's the board meeting, that's the whole morning and I'm gonna b 
+   8  MTG-0909-ACME#0149        meeting    Chris Hale         2026-09-09T11:38:28.600000-07:00 Great, thanks. That's — that's actually most of my list. I said medium.                              
+   9  CGPT-F-01#m6              chatgpt    assistant          2026-09-14T12:45:18-07:00  Aggregate to depot-day first, then use a `RANGE` frame over dates so gaps (days with no routes) are  
+  10  EM-F-034                  email      -                  2026-09-15T15:30:42-07:00  From: Kelsey Tran <kelsey@roadsignal.example.com> To: Alex Rivera <alex@brightline.example.com> Subj 
+  11  MTG-0909-ACME#0197        meeting    Marcus Webb        2026-09-09T11:49:26.300000-07:00 Yeah, I'll throw something on your calendar. Nice job.                                               
+  12  MTG-0911-DESIGN#0106      meeting    Dana Lee           2026-09-11T13:27:35.400000-07:00 Okay, I'm gonna run, my session's in the other room and I still have to set up the recording.        
+  13  CGPT-0917-DENVER#m7       chatgpt    user               2026-09-17T21:18:52-07:00  perfect, thanks                                                                                      
+  14  DCT-F-024                 dictation  -                  2026-09-14T21:05:24-07:00  Book a haircut before Denver.                                                                        
+  15  MTG-0917-RECRUIT#0045     meeting    Leah Brooks        2026-09-17T15:10:50.500000-07:00 Okay. John's calendar is also pretty packed with board prep, so, um, let me see. I'll try for Tuesda 
+  16  CGPT-0917-DENVER#m4       chatgpt    assistant          2026-09-17T21:08:40-07:00  I'd split it like this: **Wed night (late arrivals)**: don't book anything formal. The **Terminal Ba 
+  17  MTG-0910-1ON1#0004        meeting    John Okafor        2026-09-10T16:32:20.400000-07:00 Yeah, let's do the loop. I've been sitting since seven. My back is — [inaudible] — terrible.         
+  18  MTG-0909-ACME#0046        meeting    Alex Rivera        2026-09-09T11:12:01.700000-07:00 Actually — do you want to just see it? I can share my screen and show you the staging version. It's  
+  19  CDX-F2                    codex      -                  2026-09-17T23:22:51-07:00  user: want to try a gradient boosting model on top of what we have. lightgbm, features: distance_mi, 
+  20  CGPT-0917-DENVER#m6       chatgpt    assistant          2026-09-17T21:13:37-07:00  > Denver dinner plan: Thursday 9/24 team dinner at Tavernetta (short walk from the hotel), Guard and 
+
+Needed groups:
+  group 1: MISSING
+  group 2: MISSING
+Missing needed groups: 1, 2
