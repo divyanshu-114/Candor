@@ -34,6 +34,9 @@ def run(name: str, env_str: str, qfile: str, key: bool, frozen: bool, retrieval_
     m = re.search(r"RETRIEVAL score ([\d.]+)\s+complete@5/10/20 = ([\d./]+)\s+MRR ([\d.]+)", out)
     t = re.search(r"tokens/question (\d+)\s+seconds/question ([\d.]+)", out)
     a = re.search(r"ANSWERS strict\(rules\) ([\d.]+).*?FALSE-ANSWER rate on unanswerable (\d+)/(\d+)", out, re.S)
+    crash = re.search(r"'crash': (\d+)", out)
+    if crash:
+        print(f"WARNING: config {name} had {crash.group(1)} crashed question(s): numbers include baseline fallbacks", file=sys.stderr)
     return {"score": float(m.group(1)) if m else None, "complete": m.group(2) if m else "-", "mrr": float(m.group(3)) if m else None,
             "tokens": int(t.group(1)) if t else None, "secs": float(t.group(2)) if t else None,
             "answers": float(a.group(1)) if a else None, "false_ans": f"{a.group(2)}/{a.group(3)}" if a else "-", "raw": out}

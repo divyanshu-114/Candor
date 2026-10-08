@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 
 from memory import config, diagnostics
 from memory import crossenc, lanes
@@ -242,6 +243,19 @@ def run_v2(question: str, as_of: str, k: int, store: MemoryStore, index: MemoryI
     fused_rank = {uid: r for r, uid in enumerate(pool_ids, 1)}
     if config.USE_ANCHOR:
         extras["anchor"] = anchor_extras(question, analysis, visible_ids, visible_units, store, index, meta)
+    if config.USE_AGENDA:
+        from memory import anchor as anchor_mod
+        from memory.retrieve import _date_anchored_candidates
+        from datetime import datetime as _dt
+        as_of_dt = _dt.fromisoformat(as_of.replace("Z", "+00:00"))
+        if anchor_mod.wants_agenda(question):
+            days = anchor_mod.question_dates(question, as_of_dt, analysis.get("dates"))
+            if days:
+                got = _date_anchored_candidates([d.isoformat() for d in days], visible_units, config.AGENDA_CAP)
+                if re.search(r"\b(?:calendar|schedule|agenda|events?|meetings?|appointments?)\b", question, re.I):
+                    got = [u for u in got if get_info(store).source_of.get(u) == "calendar"] or got   # "what's on my calendar": events only
+                extras["agenda"] = [u for u in got if u in visible_ids]
+                meta["agenda_dates"] = [d.isoformat() for d in days]
     if resolution and resolution.get("by") != "name" and config.PEOPLE_EXTRAS:
         from memory import people as people_mod
         names = [resolution["resolved"]] if resolution.get("resolved") else [n for n, _s in resolution["candidates"]]
@@ -282,6 +296,7 @@ def run_v2(question: str, as_of: str, k: int, store: MemoryStore, index: MemoryI
             bonus[uid] = max(bonus.get(uid, 0.0), config.EXTRA_BONUS[source])
     all_ids = list(dict.fromkeys(pool_ids + [u for u in bonus if u in visible_ids]))
     combined = scorer.combine(all_ids, fused_rank, bonus)
+    meta["ce_scores"] = dict(scorer.scores)
     survivors = [u for u in pick_survivors(all_ids, combined, store) if u in visible_ids]
     local = survivors[:10] + [u for u in tail if u in visible_ids and u not in survivors[:10]] + survivors[10:]
     cand = list(dict.fromkeys(survivors[: config.RERANK_V2_MAX - len(tail)] + [u for u in tail if u in visible_ids]))[: config.RERANK_V2_MAX]

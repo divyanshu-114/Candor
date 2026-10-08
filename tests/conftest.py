@@ -117,3 +117,12 @@ def corpus(corpus_dir):
     return MemoryStore(str(corpus_dir))
 
 
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_local_models(monkeypatch, tmp_path):
+    """Unit tests never download or run the local cross-encoder (slow, needs the model on disk) and never write to the repo's
+    score cache. Tests of the cross-encoder itself opt back in explicitly."""
+    from memory import config
+    monkeypatch.setattr(config, "USE_CROSS_ENCODER", False)
+    monkeypatch.setattr(config, "CE_CACHE_PATH", str(tmp_path / "ce.sqlite"))

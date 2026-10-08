@@ -122,3 +122,39 @@ def window_candidates(relation: str, anchor_ids: list[str], visible: set[str], s
         later.sort(key=lambda i: store.get(i).time, reverse=(relation == "before"))
         out += [i for i in later[:12] if i not in out]
     return out
+
+
+_ORDINAL_RE = re.compile(r"\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b", re.I)
+_AGENDA_CUE = re.compile(r"\b(?:calendar|schedule|agenda|meetings?|events?|appointments?|on my plate|happening|planned|booked)\b|\bon\s+(?:the\s+)?\d|"
+                         r"\bon\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)", re.I)
+
+
+def question_dates(question: str, as_of: datetime, analysis_dates: list[str] | None = None) -> list[date]:
+    """Calendar dates a question names outright: "September 22nd", "Sep 22", "the 22nd" (nearest such day to as_of), plus ISO dates from
+    the analysis stage. Only used to fetch that day's agenda; relative words ("tomorrow") are handled by the anchor relations."""
+    found: list[date] = list(mentioned_dates(question, as_of.year))
+    for d in analysis_dates or []:
+        try:
+            found.append(date.fromisoformat(str(d)[:10]))
+        except ValueError:
+            continue
+    if not found:
+        for m in _ORDINAL_RE.finditer(question):
+            dom = int(m.group(1))
+            base = as_of.date()
+            cands = []
+            for months in (0, 1, -1):
+                month = base.month + months
+                year = base.year + (month - 1) // 12
+                month = (month - 1) % 12 + 1
+                try:
+                    cands.append(date(year, month, dom))
+                except ValueError:
+                    continue
+            if cands:
+                found.append(min(cands, key=lambda d: abs((d - base).days)))
+    return list(dict.fromkeys(found))[:2]
+
+
+def wants_agenda(question: str) -> bool:
+    return bool(_AGENDA_CUE.search(question))

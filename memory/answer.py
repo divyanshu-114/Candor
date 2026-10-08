@@ -607,6 +607,12 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         extractive = _extractive_answer(retrieved_ids, question, as_of, store)
         if not extractive:
             return _abstain_row(qid, retrieved_ids, "no records retrieved, or the coverage gate found the question's terms absent from memory")
+        if config.NO_KEY_GATE != "v1":
+            from memory.coverage import evidence_gate
+            abstain, signals = evidence_gate(question, store.visible(as_of), retrieved_ids, meta.get("ce_scores"))
+            diagnostics.set_detail("gate", signals)
+            if abstain:
+                return _abstain_row(qid, retrieved_ids, f"no-key evidence gate: the question's words do not meet in one record ({signals})")
         top_score = index.bm25(question, visible_ids, 1)
         top_score_val = top_score[0][1] if top_score else 0.0
         if top_score_val < config.NO_KEY_ABSTAIN_BM25_MIN:

@@ -99,10 +99,12 @@ CHAIN_SEEDS = int(os.environ.get("CHAIN_SEEDS", "6"))      # top candidates whos
 USE_NEIGHBORS_V2 = _bool("USE_NEIGHBORS_V2", "true")    # records adjacent to the best candidates (transcript question/answer pairs)
 NEIGHBOR_SEEDS = int(os.environ.get("NEIGHBOR_SEEDS", "6"))
 NEIGHBOR_SPAN = int(os.environ.get("NEIGHBOR_SPAN", "2"))
-EXTRA_BONUS = {"neighbors": float(os.environ.get("BONUS_NEIGHBORS", "0.006")), "anchor": float(os.environ.get("BONUS_ANCHOR", "0.012")), "chain": float(os.environ.get("BONUS_CHAIN", "0.008")),
+EXTRA_BONUS = {"agenda": float(os.environ.get("BONUS_AGENDA", "0.012")), "neighbors": float(os.environ.get("BONUS_NEIGHBORS", "0.006")), "anchor": float(os.environ.get("BONUS_ANCHOR", "0.012")), "chain": float(os.environ.get("BONUS_CHAIN", "0.008")),
                "people": float(os.environ.get("BONUS_PEOPLE", "0.008")), "ledger": float(os.environ.get("BONUS_LEDGER", "0.012"))}
 EXTRAS_MAX = int(os.environ.get("EXTRAS_MAX", "14"))      # most guaranteed extra candidates (chains / anchor / people / ledger)
 USE_ANCHOR = _bool("USE_ANCHOR", "true")                # anchor-then-window for relative time (3d)
+USE_AGENDA = _bool("USE_AGENDA", "true")                # explicit dates in the question ("on September 22nd") -> that day's calendar and records
+AGENDA_CAP = int(os.environ.get("AGENDA_CAP", "14"))
 USE_PEOPLE = _bool("USE_PEOPLE", "true")                # person resolution metadata (writer is told about ambiguity)
 PEOPLE_EXTRAS = _bool("PEOPLE_EXTRAS", "false")          # also add full-name query variants and the person's records to the pool (measured: no gain)                # person resolution for shared first names (3e)
 USE_LEDGER = _bool("USE_LEDGER", "true")                # commitments ledger lane (3f)
@@ -181,6 +183,11 @@ SUPPORT_QUOTE_MAX_WORDS = 15
 # "BM25 found essentially nothing" (near-zero signal), not as a quality gate;
 # Gate 1/2 below do the real abstention work whenever a key is available.
 NO_KEY_ABSTAIN_BM25_MIN = float(os.environ.get("NO_KEY_ABSTAIN_BM25_MIN", "2.0"))
+
+# Evidence gate for the no-key path (memory/coverage.py evidence_gate). "v1" = only the original coverage gate.
+NO_KEY_GATE = os.environ.get("NO_KEY_GATE", "v1" if os.environ.get("PIPELINE", "v2").lower() == "v1" else "v1")
+GATE_COOCCUR_MIN = float(os.environ.get("GATE_COOCCUR_MIN", "0.45"))
+GATE_CE_MIN = float(os.environ.get("GATE_CE_MIN", "0.0"))
 
 # No-LLM coverage gate (memory/coverage.py): abstain only when at least this
 # share of the question's idf mass is unmatched anywhere in visible memory AND
