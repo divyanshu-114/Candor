@@ -114,10 +114,17 @@ python3 -m venv "$CLONE_DIR/.venv"
 "$CLONE_DIR/.venv/bin/python" -m pip install --quiet --upgrade pip
 "$CLONE_DIR/.venv/bin/python" -m pip install --quiet -r "$CLONE_DIR/requirements.txt"
 
+T0=$(date +%s)
 if (cd "$CLONE_DIR" && PYTHONPATH=. "$CLONE_DIR/.venv/bin/python" -m pytest -q); then
-  pass "unit tests pass in the fresh clone"
+  pass "fast unit tests pass in the fresh clone ($(( $(date +%s) - T0 ))s)"
 else
-  fail "unit tests failed in the fresh clone"
+  fail "fast unit tests failed in the fresh clone"
+fi
+T1=$(date +%s)
+if (cd "$CLONE_DIR" && PYTHONPATH=. "$CLONE_DIR/.venv/bin/python" -m pytest -q -m slow); then
+  pass "slow/integration tests pass in the fresh clone ($(( $(date +%s) - T1 ))s)"
+else
+  fail "slow/integration tests failed in the fresh clone"
 fi
 
 # ── (d) memory, no key, 27 valid lines ───────────────────────────────────

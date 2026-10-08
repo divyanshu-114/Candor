@@ -2135,3 +2135,18 @@ date-resolver for "the day I fly" questions (changes analysis/rerank prompts; wo
 **Totals (ledger, this run):** gpt-oss-20b 141,299 tokens (69 calls) + ~15-25k unledgered judge calls;
 gpt-oss-120b 109,339 (47 calls); 250,638 ledgered, ~266-276k including the judge. Remaining of the 300k total:
 ~24-34k; 20b ~4-14k of 170k; 120b ~60.7k.
+
+---
+
+# v2 (branch `v2`)
+
+## Phase 1 — fast tests (0 tokens)
+Before: 363 tests, 20.7 s on the first run (one test 10.4 s: it paid the one-time dense-model load), 10.5 s warm.
+Findings: the suite was never really slow once warm; the cost was (a) a 96-case adversarial sweep, (b) a real 1 s wait in a TPM-retry test,
+(c) a visibility test that looped 20 as_of values, (d) `test_visible.py` had no assertions at all (it only printed).
+Changes: autouse guard that raises on any non-loopback connect or DNS lookup (+2 tests proving it); session-scoped `data_store` fixture;
+sweep merged into 10 parametrized cases; visibility loop 20 -> 6; TPM test patches the clock and asserts the requested wait;
+`test_visible` now asserts (ours differs from the official harness only by SL-EV event ids); 10 process/CLI/real-data tests marked `slow`,
+excluded by default via `pytest.ini` (`pytest -m slow` runs them). `release_check.sh` now runs the fast suite and the slow suite and prints both times.
+After: 269 fast tests in 3.4 s + 10 slow in 1.1 s.
+Not done on purpose: no more test deletion; the remaining tests each guard a rule or a component contract.

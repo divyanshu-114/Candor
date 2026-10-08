@@ -134,6 +134,7 @@ def test_secrets_in_the_command_are_masked_before_the_prompt(fake_llm):
 
 # --- prompt size, real data --------------------------------------------------
 
+@pytest.mark.slow
 def test_compact_prompt_stays_under_budget_on_real_data():
     commands = [json.loads(l) for l in (ROOT / "evals" / "actions_train.jsonl").read_text().splitlines() if l.strip()]
     for item in commands:

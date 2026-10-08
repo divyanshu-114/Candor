@@ -8,7 +8,7 @@ Hard rules: no train/dev/holdout text, answers or ids in code or prompts; never 
 | Phase | Status | Key numbers |
 |---|---|---|
 | 0 Setup | done | branch v2 created; cache backed up (113 files); OPENROUTER_* added to gitignored .env |
-| 1 Fast tests | todo | before: 363 tests, 20.7 s (one test = 10.4 s) |
+| 1 Fast tests | done | 363 tests 20.7 s (cold) / 10.5 s warm -> 269 fast in 3.4 s + 10 slow in 1.1 s; socket guard on |
 | 2 Eval sets + diagnostics | todo | |
 | 3 Retrieval v2 (3a-3f) | todo | |
 | 4 Answers v2 | todo | |
