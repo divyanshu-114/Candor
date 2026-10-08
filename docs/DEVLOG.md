@@ -2177,3 +2177,33 @@ a clean baseline; (2) with no key the extractive answer is given for almost ever
 coverage gate only fires when words are missing from memory, never when all words exist in different records. Phase 4 targets this;
 (3) hop2 costs 1,127 tokens/question in v1 and was not shown to help; v2 drops it. Abstention diagnostic on the only with-key abstention
 we can replay (train): 1 case, class c (a correct answer whose quote dropped "let's").
+
+## Phase 3 — retrieval v2 (numbers; flags in memory/config.py, PIPELINE=v1 restores v1)
+
+No-key, retrieval score (all needed groups in top 10, nothing forbidden), final default config vs v1:
+
+| set | v1 no key | v2 no key | c@5/10/20 (v2) | MRR v1 -> v2 |
+|---|---|---|---|---|
+| train (27) | 64.0% | **92.0%** | .72/.92/.92 | .567 -> .697 |
+| dev (24) | 57.9% | **78.9%** | .68/.79/.89 | .397 -> .498 |
+| v2_dev (40) | 68.6% | **82.9%** | .77/.83/.91 | .526 -> .633 |
+| v2_holdout (25, aggregate only) | 75.0% | **75.0%** | .68/.74/.79 | .560 -> .792 |
+
+The holdout did NOT improve at the primary score (MRR did; c@20 fell from .84 to .79; temporal and broad questions still fail). Train/dev gains are
+partly tuning gains (CE weight, ledger, neighbours were chosen on them). Treat the holdout row as the honest generalisation estimate.
+
+With key (live): v1 on v2_dev 82.9% (4,905 tokens/q). v2 on a 20-question half of v2_dev (every other question): **94.1%** vs v1 82.4% and v2 no-key 88.2% on the
+same half, 4,314 tokens/q; BUT the run hit the gpt-oss-120b daily limit part-way (ledger 183k tokens): 4 questions had `llm_unavailable`, 2 reranks and
+3 analyses degraded, so this number is a lower-quality mix. Live runs stopped there (daily quota, model gpt-oss-120b; gpt-oss-20b at 134k).
+
+Ablations (no key, train / v2_dev, on top of lanes + cross-encoder): lanes alone 0.60/0.66 (worse than v1: lane-balanced RRF scrambles the top 10);
++MiniLM-L6 cross-encoder 0.88/0.77; +ledger 0.92/0.80 (kept); +neighbours as tail (c@20 +.03, kept); anchor, chains, people: no change (kept on, harmless;
+people extras off); first versions of chains/anchor/people as guaranteed slots HURT (MRR -0.1) until rewritten as score bonuses. Embedding models (hybrid,
+fewer = worse): bge-small .646 c@10, bge-base .696, gte-base .722 (kept: +0.37 GB, 252 s warm-up here). Rerankers: L-12 and jina-turbo no better than L-6.
+Masking fix: "SSO is on our Q4 roadmap" and Codex `key=` lines were being redacted; precise masking keeps real credentials masked (tests).
+Did not work: no-key evidence gates (co-occurrence, cross-encoder score): false answers 7/12 -> 5/12 at the price of 4-8 wrongly abstained answerable questions, no net gain; left off (NO_KEY_GATE).
+
+## Phase 4/5/6 status
+Phase 4: writer v2 (soft quotes, partial answers, version-chain hint, arithmetic in code) is implemented and unit-tested but OFF (WRITER_V2) because it has not been measured
+with a key (quota). Phase 5 done: actions with key train 12/12, dev 30/30 (v1 27/30), new 15/15 (v1 9/15); no key 12/12, 30/30, 14/15 (v1 4/12, 13/30, 2/15).
+Phase 6 done: banner, --strict, provider quirks, provider_check (groq 5/5, openrouter free models 5/5), fake strict server test.
