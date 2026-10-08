@@ -205,8 +205,8 @@ BRIEF.md, PROJECT_RULES.md   the task brief and working guidelines
 - **Building:** Antigravity (models: TODO(user): list the models shown in Antigravity); later quota, caching and planner work and this README with Claude Code.
 - **Runtime models:** Groq `openai/gpt-oss-120b` (ranking; also the writer in the dev check) and `openai/gpt-oss-20b` (understanding, writer, planner, judge). The Gemini key was rejected for generation and not used.
 - **Embeddings:** `BAAI/bge-small-en-v1.5` via fastembed, running locally.
-- **Spend:** TODO(user): the rupee amount (only free tiers were used).
-- **Demo video:** TODO(user): link, or write "not included".
+- **Spend:** 0rs (only free tiers were used).
+- **Demo video:** not included
 
 ## Development history
 
