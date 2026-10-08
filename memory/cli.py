@@ -23,7 +23,7 @@ from memory import diagnostics
 from memory.retrieve import baseline_retrieve, retrieve, warmup
 from memory.answer import answer_question
 from memory.llm import get_usage, reset_usage
-from memory import ordered_io
+from memory import degraded, ordered_io
 
 LOG = logging.getLogger(__name__)
 
@@ -98,7 +98,8 @@ def _process_one(item: dict, data_dir: str, cache_dir: str, retrieval_only: bool
 def answer(questions: Path, out: Path, data_dir: str | None = None, cache_dir: str = ".cache",
            resume: bool = False, workers: int | None = None, stats_path: Path | None = None,
            retrieval_only: bool = False, diagnostics_path: Path | None = None,
-           ids: set[str] | None = None) -> None:
+           ids: set[str] | None = None) -> dict[str, int]:
+    """Run all questions; returns {degraded stage: number of questions it affected} (empty when nothing degraded)."""
     data_dir = data_dir or DATA_DIR_DEFAULT
     workers = workers if workers is not None else config.WORKERS
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -156,6 +157,8 @@ def answer(questions: Path, out: Path, data_dir: str | None = None, cache_dir: s
     degraded_count = sum(1 for d in diag_by_id.values() if d.get("degraded_stages"))
     print(f"[diagnostics] {degraded_count}/{len(todo)} computed questions had at least one degraded stage "
           f"(see {diagnostics_path})")
+    stage_counts, seen = degraded.summarize(diag_by_id.values())
+    print(degraded.banner(stage_counts, seen, str(diagnostics_path)))
 
     # Per-stage average tokens/question (step 1, token budget task): sum
     # each stage's tokens across all computed questions, divide by question
@@ -199,6 +202,7 @@ def answer(questions: Path, out: Path, data_dir: str | None = None, cache_dir: s
         **usage,
     }
     stats_path.write_text(json.dumps(stats, indent=2))
+    return dict(stage_counts)
 
 
 def main() -> None:
@@ -216,12 +220,16 @@ def main() -> None:
     command.add_argument("--ids", default=None,
                           help="comma-separated question ids; recompute only this subset, "
                                "leaving every other id already in --out untouched")
+    command.add_argument("--strict", action="store_true",
+                          help="exit with status 3 if any stage degraded (no key, quota, provider failure, missing local model)")
     sub.add_parser("warmup", help="download/load embeddings and cache every unit")
     args = parser.parse_args()
     if args.command == "answer":
         ids = set(x.strip() for x in args.ids.split(",") if x.strip()) if args.ids else None
-        answer(Path(args.questions), Path(args.out), data_dir=args.data_dir, cache_dir=args.cache_dir,
-               resume=args.resume, workers=args.workers, retrieval_only=args.retrieval_only, ids=ids)
+        summary = answer(Path(args.questions), Path(args.out), data_dir=args.data_dir, cache_dir=args.cache_dir,
+                         resume=args.resume, workers=args.workers, retrieval_only=args.retrieval_only, ids=ids)
+        if args.strict and summary:
+            raise SystemExit(3)
     elif args.command == "warmup":
         dimension, count, seconds = warmup()
         print(f"Warmup complete: dimension={dimension}, vectors={count}, seconds={seconds:.2f}")

@@ -30,6 +30,48 @@ SPOKEN_VALUE = re.compile(
 )
 
 
+# Words whose "<word> is/=/: <value>" is often ordinary prose or code ("sorted(x, key=lambda ...)", "Foreign-key constraints:",
+# "SSO is on our Q4 roadmap" after "...email and password with two-factor"). For these the VALUE must look like a secret.
+_AMBIGUOUS_KEYWORDS = ("key", "token", "login", "credential")
+
+
+def _precise() -> bool:
+    from memory import config  # lazy: config has no imports from memory, but keep safety importable on its own
+    return config.USE_PRECISE_MASKING
+
+
+def keyword_value_is_secret(keyword_text: str, value: str) -> bool:
+    """Does `<keyword> ... <value>` look like a credential rather than prose or code?
+
+    WHY: v1 masked any 3+ character value after the word 'key' or 'token', which hid real facts and code
+    (an identifier like a constraint name, `key=lambda`). A credential has digits, mixed case, symbols or length;
+    a lowercase snake_case identifier or an ordinary lowercase word after an ambiguous keyword does not.
+    Stronger keywords (password, secret, passcode) keep the permissive rule for non-trivial values."""
+    v = value.strip("\"'`.,;:()[]{}")
+    if not _precise():
+        return True
+    has_digit = any(c.isdigit() for c in v)
+    has_alpha = any(c.isalpha() for c in v)
+    mixed_case = any(c.islower() for c in v) and any(c.isupper() for c in v)
+    if has_digit and has_alpha or mixed_case or len(v) >= 24:
+        return True
+    ambiguous = any(w in keyword_text.lower() for w in _AMBIGUOUS_KEYWORDS) and not any(
+        w in keyword_text.lower() for w in ("password", "passcode", "passwd", "secret", "api"))
+    if ambiguous:
+        return False                      # lowercase word / identifier after "key", "token"...: prose or code
+    return len(v) >= 6 and not re.fullmatch(r"[a-z]+", v)   # password: <lowercase plain word> is too weak a signal
+
+
+def spoken_value_is_secret(value: str) -> bool:
+    """A secret dictated aloud is spelled out ("s k dash 4 7 a ..."): it contains several single characters/digits.
+    Ordinary words ("on our Q4 roadmap") are not."""
+    if not _precise():
+        return True
+    tokens = value.split()
+    spelled = [t for t in tokens if len(t) == 1 or t.isdigit()]
+    return len(spelled) >= 2
+
+
 def iter_secret_matches(text: str) -> Iterator[tuple[str, str]]:
     """Yield (general-rule-name, value) without printing or persisting values."""
     for name, pattern in PREFIX_PATTERNS:
@@ -37,10 +79,12 @@ def iter_secret_matches(text: str) -> Iterator[tuple[str, str]]:
             yield name, match.group(1) if name == "connection-string" else match.group(0)
     for match in KEYWORD_VALUE.finditer(text):
         value = match.group(1).strip()
-        if not value.startswith(("/", "./", "../")) and not re.fullmatch(r"[a-f0-9]{32,}", value, re.I):
+        if not value.startswith(("/", "./", "../")) and not re.fullmatch(r"[a-f0-9]{32,}", value, re.I) \
+                and keyword_value_is_secret(text[match.start():match.start(1)], value):
             yield "keyword-value", value
     for match in SPOKEN_VALUE.finditer(text):
-        yield "spoken-secret", match.group(1).strip()
+        if spoken_value_is_secret(match.group(1).strip()):
+            yield "spoken-secret", match.group(1).strip()
 
 
 def mask_secrets(text: str) -> str:
@@ -58,6 +102,10 @@ def mask_secrets(text: str) -> str:
             value = match.group(1)
             if value.startswith(("/", "./", "../")) or re.fullmatch(r"[a-f0-9]{32,}", value, re.I):
                 continue  # path or hash – not a secret
+            if pattern is KEYWORD_VALUE and not keyword_value_is_secret(text[match.start():match.start(1)], value):
+                continue
+            if pattern is SPOKEN_VALUE and not spoken_value_is_secret(value.strip()):
+                continue
             spans.append(match.span(1))
     # Nested patterns must become one replacement.  Applying overlapping original
     # offsets would otherwise corrupt text after the first replacement.

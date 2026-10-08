@@ -25,6 +25,7 @@ import logging
 import re
 from datetime import datetime
 
+from memory import diagnostics
 from memory import llm as llm_module
 from memory.safety import mask_secrets
 
@@ -225,6 +226,7 @@ def plan(command: str, as_of: str, data_dir: str | None = None, cache_dir: str |
     user = compact_world(world) + "\nCOMMAND: " + mask_secrets(" ".join(str(command).split()))
     first = _call(PLAN_SYSTEM, user, "fast", config.MAX_TOKENS_PLAN, "actions_plan")
     if first is None:
+        diagnostics.mark_degraded("actions_plan")
         return rules_plan(command, world)  # LLM unavailable: deterministic rules
 
     draft = _actions_of(first) or []
@@ -237,8 +239,11 @@ def plan(command: str, as_of: str, data_dir: str | None = None, cache_dir: str |
         actions = _actions_of(_call(FOLLOWUP_SYSTEM, json.dumps(payload), config.ACTIONS_STEP2_ROLE,
                                     config.MAX_TOKENS_FOLLOWUP, "actions_followup"))
         if actions is None:
+            diagnostics.mark_degraded("actions_followup")
             return rules_plan(command, world)
         validated, errors = validate_actions(actions, world, command)
+        if errors:
+            diagnostics.mark_degraded("actions_validation")
         return validated if not errors else _clarify(GENERIC_CLARIFY)
 
     validated, errors = validate_actions(draft, world, command)
@@ -253,4 +258,5 @@ def plan(command: str, as_of: str, data_dir: str | None = None, cache_dir: str |
         validated2, errors2 = validate_actions(repaired, world, command)
         if not errors2:
             return validated2
+    diagnostics.mark_degraded("actions_validation")
     return _clarify(GENERIC_CLARIFY)

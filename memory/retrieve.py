@@ -13,6 +13,7 @@ from memory.store import MemoryStore
 from memory.query import analyze_question, get_date_expansions
 from memory import llm as llm_module
 from memory.llm import chat_json
+from memory.prompts import RERANK_SYSTEM
 
 LOG = logging.getLogger(__name__)
 
@@ -206,6 +207,9 @@ def retrieve(question: str, as_of: str, k: int = config.RESULT_K,
         diagnostics.mark_degraded("analysis")
         LOG.warning("Analysis stage degraded to heuristic fallback for question: %r", question)
     meta["analysis"] = analysis
+    if config.USE_LANES:
+        from memory.retrieve_v2 import run_v2  # lazy: retrieve_v2 builds on this module's helpers
+        return run_v2(question, as_of, k, store, index, visible_units, visible_ids, analysis, meta, return_meta)
     sub_queries = analysis["sub_queries"] if config.USE_MULTIQUERY else [question]
 
     date_exp = " ".join(get_date_expansions(d) for d in analysis["dates"])
@@ -393,15 +397,7 @@ def retrieve(question: str, as_of: str, k: int = config.RESULT_K,
                 snippets.append(f"ID: {uid} | Source: {u.source} | Time: {u.time} | Speaker: {u.speaker} | Text: {text}")
         
         if snippets:
-            sys_prompt = (
-                "Rank candidate records by usefulness for answering the question.\n"
-                "RULES:\n"
-                "- first 10 must include the best 2 records for EACH sub-query\n"
-                "- if wants_latest: newest decisive record first, but keep earlier records showing WHAT CHANGED in ranks 4-10\n"
-                "- for who-said questions keep second-hand reports and the person's own statement separate\n"
-                "- never invent ids; only use ids from the list; drop chit-chat\n\n"
-                "Return JSON: {\"ranked\": [\"id1\", \"id2\", ...], \"reason\": \"short explanation\"}"
-            )
+            sys_prompt = RERANK_SYSTEM
             user_prompt = f"Question: {question}\nAs of: {as_of}\nIntent: {analysis['intent']}\nSub-queries: {analysis['sub_queries']}\nwants_latest: {analysis['wants_latest']}\n\nCandidates:\n" + "\n".join(snippets)
 
             res = _safe_chat_json(sys_prompt, user_prompt, llm_module.get_model_strong(),

@@ -40,6 +40,19 @@ User: "How many times did we change the pricing for the starter tier?"
 {"intent": "arithmetic_or_dates", "wants_latest": false, "wants_history": true, "sub_queries": ["starter tier pricing", "pricing change starter"], "entities": ["starter tier"], "dates": [], "ambiguous_person": null, "needs_followup": false, "answer_sketch": "We've changed the starter tier price twice: once in March to $12/mo, then again in July to $15/mo."}
 """
 
+ANCHOR_PROMPT_SUFFIX = """
+Two more keys for questions about relative time ("right after the planning meeting", "the day before the board
+meeting", "the day I fly"):
+- "relation": one of [after, before, same_day, day_before, day_after, none]
+- "anchor_query": short keywords that identify the anchor EVENT ("planning meeting", "board meeting", "fly Denver"), "" if none
+"""
+
+
+def _system_prompt() -> str:
+    # The suffix changes the prompt text (and so the LLM cache key); it is only added when the stage is enabled.
+    return SYSTEM_PROMPT + ANCHOR_PROMPT_SUFFIX if config.USE_ANCHOR else SYSTEM_PROMPT
+
+
 def fallback_analyze(question: str, as_of: str, degraded: bool = False) -> dict:
     """Fallback when LLM is unavailable or disabled by MODE.
 
@@ -73,7 +86,7 @@ def analyze_question(question: str, as_of: str) -> dict:
 
     user_prompt = f"as_of: {as_of}\nUser: {question}"
     try:
-        res = chat_json(SYSTEM_PROMPT, user_prompt, llm_module.get_model_fast(),
+        res = chat_json(_system_prompt(), user_prompt, llm_module.get_model_fast(),
                          max_tokens=config.MAX_TOKENS_ANALYSIS, reasoning_effort=config.REASONING_EFFORT_LOW,
                          stage="analysis")
         if res:
@@ -88,6 +101,8 @@ def analyze_question(question: str, as_of: str) -> dict:
                 "ambiguous_person": res.get("ambiguous_person", None),
                 "needs_followup": bool(res.get("needs_followup", False)),
                 "answer_sketch": str(res.get("answer_sketch", "") or ""),
+                "relation": str(res.get("relation", "") or ""),
+                "anchor_query": str(res.get("anchor_query", "") or ""),
                 "_degraded": False,
             }
     except Exception as e:

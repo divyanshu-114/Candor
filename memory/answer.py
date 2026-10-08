@@ -15,8 +15,10 @@ from datetime import datetime
 from memory import config
 from memory import diagnostics
 from memory import llm as llm_module
+from memory import arith
 from memory.coverage import should_abstain as _coverage_says_abstain
 from memory.llm import chat_json
+from memory.quotes import soft_quote_match
 from memory.retrieve import retrieve, _resources
 from memory.safety import mask_secrets, INJECTION_PATTERNS
 from memory.store import MemoryStore
@@ -335,17 +337,48 @@ answer to a short reason, used_ids to [], and support to [].
 """
 
 
+def _build_writer_system_v2() -> str:
+    """v1 prompt with four targeted additions (versions, partial answers, computed arithmetic, new JSON shape).
+    Built from the v1 text so the shared rules cannot drift."""
+    head = WRITER_SYSTEM.split("Return ONLY JSON")[0]
+    head = head.replace(
+        "DISAGREEMENT (two people",
+        "VERSIONS: when the user message has a <chain> hint, those records are successive versions of ONE fact, oldest first. "
+        "Answer with the LATEST version visible at as_of and mention an earlier value only as history (\"moved from X\").\n\n"
+        "DISAGREEMENT (two people", 1)
+    tail = f"""ARITHMETIC: never count or subtract dates yourself. Put the two ISO dates in "compute" and write {arith.PLACEHOLDER}
+where the number belongs, e.g. "compute": {{"op": "days_between", "a": "2026-09-10", "b": "2026-09-16"}}.
+
+PARTIAL ANSWERS: "answerable" is true when the records state the fact asked; "partial" when they state the MAIN fact but not
+a secondary detail the question also asked for (answer what is supported, then one short sentence saying what is missing, and
+fill "missing"); false when no record states the fact asked, even if related records exist (a person, company or event being
+mentioned is not the same as the asked name, price, outcome or number being stated).
+
+Return ONLY JSON: {{"answerable": true|"partial"|false, "answer": "...", "missing": "", "compute": null,
+"used_ids": ["id", ...], "support": [{{"id": "<record id>", "quote": "<=15 words copied from that record's text"}}]}}.
+Every claim in the answer must be backed by at least one support quote copied from the evidence (not paraphrased); give a quote
+for each record the answer relies on. If answerable is false: short reason in "answer", used_ids [], support [].
+"""
+    return head + tail
+
+
+WRITER_SYSTEM_V2 = _build_writer_system_v2()
+
+
 def _writer_model():
     """The model for the writer role (config.WRITER_ROLE), following that
     role's provider chain."""
     return llm_module.get_model_strong() if config.WRITER_ROLE == "strong" else llm_module.get_model_fast()
 
 
-def _run_writer(evidence: str, question: str, as_of: str, intent: str) -> dict | None:
+def _run_writer(evidence: str, question: str, as_of: str, intent: str, chain_ids: list[str] | None = None) -> dict | None:
     checklist = INTENT_CHECKLISTS.get(intent, INTENT_CHECKLISTS["other"])
+    v2 = config.WRITER_V2
     user = (f"{evidence}\n\nToday (as_of): {as_of}\nQuestion intent: {intent} "
             f"(checklist: {checklist})\nQuestion: {question}")
-    res = chat_json(WRITER_SYSTEM, user, _writer_model(),
+    if v2 and chain_ids:
+        user = f"{evidence}\n<chain>{' -> '.join(chain_ids)}</chain>\n\n" + user.split("\n\n", 1)[1]
+    res = chat_json(WRITER_SYSTEM_V2 if v2 else WRITER_SYSTEM, user, _writer_model(),
                      max_tokens=config.MAX_TOKENS_WRITER, reasoning_effort=config.REASONING_EFFORT_WRITER,
                      stage="writer")
     if not res:
@@ -354,8 +387,13 @@ def _run_writer(evidence: str, question: str, as_of: str, intent: str) -> dict |
     for item in (res.get("support") or []):
         if isinstance(item, dict) and item.get("id") and item.get("quote"):
             support.append({"id": str(item["id"]), "quote": str(item["quote"])})
+    raw = res.get("answerable", False)
+    partial = v2 and (str(raw).lower() == "partial")
     return {
-        "answerable": bool(res.get("answerable", False)),
+        "answerable": bool(raw) and str(raw).lower() != "false",
+        "partial": partial,
+        "missing": str(res.get("missing", "") or ""),
+        "compute": res.get("compute") if v2 else None,
         "answer": str(res.get("answer", "")),
         "used_ids": [str(x) for x in (res.get("used_ids") or [])],
         "support": support,
@@ -385,10 +423,12 @@ def _absence_unsupported(answer: str, support: list[dict], verified_ids: list[st
 
 
 def _verify_support(support: list[dict], display_text_by_id: dict[str, str]) -> list[str]:
-    """Return the ids whose support quote actually occurs (normalized,
-    case/punctuation/whitespace-insensitive) in that record's displayed
-    evidence text. This -- not the model's own "answerable" claim -- is the
-    real abstention gate.
+    """Return the ids whose support quote actually occurs in that record's displayed evidence text. This -- not the
+    model's own "answerable" claim -- is the real abstention gate.
+
+    v1: normalised verbatim substring. v2 (config.WRITER_V2): >= QUOTE_SOFT_THRESHOLD of the quote's content words in
+    order, and every number / date / amount / capitalised name in the quote present EXACTLY (memory/quotes.py), so a
+    dropped filler word no longer turns a correct answer into "I don't know" while a changed figure still fails.
     """
     verified = []
     for item in support:
@@ -396,7 +436,11 @@ def _verify_support(support: list[dict], display_text_by_id: dict[str, str]) -> 
         record_text = display_text_by_id.get(uid)
         if not record_text:
             continue
-        if _normalize_for_match(quote) and _normalize_for_match(quote) in _normalize_for_match(record_text):
+        if config.WRITER_V2:
+            ok = soft_quote_match(quote, record_text, config.QUOTE_SOFT_THRESHOLD)
+        else:
+            ok = bool(_normalize_for_match(quote)) and _normalize_for_match(quote) in _normalize_for_match(record_text)
+        if ok:
             verified.append(uid)
     return verified
 
@@ -584,7 +628,8 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
 
     intent = meta.get("analysis", {}).get("intent", "other")
     diagnostics.set_detail("evidence_ids", evidence_ids)
-    written = _run_writer(evidence, question, as_of, intent)
+    chain_ids = [i for i in (meta.get("chain") or []) if i in evidence_ids]
+    written = _run_writer(evidence, question, as_of, intent, chain_ids if len(chain_ids) > 1 else None)
     if written is None:
         diagnostics.mark_degraded("writer")
         extractive = _extractive_answer(retrieved_ids, question, as_of, store)
@@ -602,14 +647,14 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         return _abstain_row(qid, retrieved_ids,
                              f"answerable={written['answerable']}, support quotes verified={len(verified_ids)}")
 
-    scrubbed = _scrub_answer(written["answer"])
+    scrubbed = _scrub_answer(arith.apply(written["answer"], written.get("compute")))
     final_support = written["support"]
 
     if _contains_future_date(scrubbed, as_of_dt):
         LOG.warning("Writer mentioned a date after as_of for question id=%s; re-asking once", qid)
         retry_user = (f"{evidence}\n\nToday (as_of): {as_of}\nQuestion intent: {intent}\nQuestion: {question}\n\n"
                       "IMPORTANT: do not mention dates after as_of.")
-        retry = chat_json(WRITER_SYSTEM, retry_user, _writer_model(),
+        retry = chat_json(WRITER_SYSTEM_V2 if config.WRITER_V2 else WRITER_SYSTEM, retry_user, _writer_model(),
                            max_tokens=config.MAX_TOKENS_WRITER, reasoning_effort=config.REASONING_EFFORT_WRITER,
                            stage="writer")
         if retry and retry.get("answer"):

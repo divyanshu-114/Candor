@@ -2150,3 +2150,30 @@ sweep merged into 10 parametrized cases; visibility loop 20 -> 6; TPM test patch
 excluded by default via `pytest.ini` (`pytest -m slow` runs them). `release_check.sh` now runs the fast suite and the slow suite and prints both times.
 After: 269 fast tests in 3.4 s + 10 slow in 1.1 s.
 Not done on purpose: no more test deletion; the remaining tests each guard a rule or a component contract.
+
+## Phase 2 — evaluation sets and diagnostics
+
+**Sets.** `evals/v2_dev.jsonl` (40) and `evals/v2_holdout.jsonl` (25), written after reading the whole corpus, holdout first
+(details and the verification method in `docs/dev_set_notes.md`; `scripts/verify_eval_set.py` re-derives every id, visibility
+and key term from the official harness loader; 0 problems). 11 unanswerable questions in total (5 + 6), 1 planted instruction in
+each file, 3 same-question-at-3-times trios, 2 deleted-message pairs.
+
+**Tools.** `scripts/eval_report.py` (one command: run + per-category retrieval and answer scores, abstentions, false-answer rate,
+tokens and seconds per question, and the abstention diagnostic a/b/c/d/e; refuses to print per-question detail for any file named
+*holdout*), `scripts/ablate.py` (flag sets -> markdown table; refuses the holdout), `scripts/show_misses.py` (tuning aid; refuses the
+holdout), `memory/quotes.py` (the soft quote matcher, tested), `memory/diagnostics.py` now records evidence ids, writer verdict and abstain reason.
+
+**v1 baselines** (retrieval = official score, all needed groups in top 10 and nothing forbidden; answers = rule scorer, strict):
+
+| set | no key: retrieval | no key: answers (false-answer rate) | with key |
+|---|---|---|---|
+| train (27) | 64.0% | 25.9% (0/2) | replay today 76.0% / 59.3% answers, **11 of 27 questions degraded (cache incomplete)**; 80.0% / 74.1% when measured live on 10-03 |
+| dev (24) | 57.9% | 20.8% (3/5) | not measured (12-question subset replay: 50.0% / 25.0%, 12/12 degraded: not in cache) |
+| v2_dev (40) | 68.6% | 20.0% (4/5) | **live today, retrieval-only: 82.9%**, MRR 0.728, 0 forbidden; 4,905 tokens/question (analysis 860 + hop2 1,127 + rerank 2,917); ledger: 116,671 tokens on gpt-oss-120b + 79,508 on gpt-oss-20b, 905 s |
+| v2_holdout (25) | 75.0% | 20.0% (6/6) | deferred to the end of Phase 3 (est. 4.9k tokens/question = 122k) |
+
+Findings: (1) the v1 LLM cache covers only the first ~16 train questions under the current prompts, so "replay" numbers are not
+a clean baseline; (2) with no key the extractive answer is given for almost every unanswerable question (false-answer 80-100%): the
+coverage gate only fires when words are missing from memory, never when all words exist in different records. Phase 4 targets this;
+(3) hop2 costs 1,127 tokens/question in v1 and was not shown to help; v2 drops it. Abstention diagnostic on the only with-key abstention
+we can replay (train): 1 case, class c (a correct answer whose quote dropped "let's").

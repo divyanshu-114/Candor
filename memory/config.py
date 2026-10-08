@@ -15,7 +15,13 @@ CHUNK_WORDS = 200
 CHUNK_OVERLAP_WORDS = 40
 LONG_UNIT_WORDS = 250
 SHORT_MEETING_WORDS = 4
-DENSE_MODEL = "BAAI/bge-small-en-v1.5"
+DENSE_MODEL = os.environ.get("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
+# Models whose training expects a text prefix on queries / documents (fastembed does not add it).
+DENSE_QUERY_PREFIX = {
+    "snowflake/snowflake-arctic-embed-m": "Represent this sentence for searching relevant passages: ",
+    "nomic-ai/nomic-embed-text-v1.5-Q": "search_query: ", "nomic-ai/nomic-embed-text-v1.5": "search_query: ",
+}
+DENSE_DOC_PREFIX = {"nomic-ai/nomic-embed-text-v1.5-Q": "search_document: ", "nomic-ai/nomic-embed-text-v1.5": "search_document: "}
 USE_DENSE = os.environ.get("USE_DENSE", "true").lower() not in {"0", "false", "no"}
 USE_ENRICHED_TEXT = os.environ.get("USE_ENRICHED_TEXT", "true").lower() not in {"0", "false", "no"}
 
@@ -58,6 +64,38 @@ USE_MULTIQUERY = _flag("USE_MULTIQUERY", _MODE_DEFAULTS["multiquery"])
 USE_NEIGHBORS = _flag("USE_NEIGHBORS", _MODE_DEFAULTS["neighbors"])
 USE_HOP2 = _flag("USE_HOP2", _MODE_DEFAULTS["hop2"])
 USE_RERANK = _flag("USE_RERANK", _MODE_DEFAULTS["rerank"])
+
+# --- v2 retrieval (each stage independently switchable; see docs/DEVLOG.md "v2 Phase 3") ---------
+def _bool(name: str, default: str) -> bool:
+    return os.environ.get(name, default).lower() not in {"0", "false", "no"}
+
+USE_LANES = _bool("USE_LANES", "false")                  # per-source lanes + query variants + RRF pool (3b)
+POOL_SIZE = int(os.environ.get("POOL_SIZE", "150"))      # fused first-stage pool
+LANE_K = int(os.environ.get("LANE_K", "25"))             # top-k per lane, per method, per query variant
+LANE_FLOOR = int(os.environ.get("LANE_FLOOR", "3"))      # a lane's best N fused candidates always stay in the pool
+USE_CROSS_ENCODER = _bool("USE_CROSS_ENCODER", "false")  # local cross-encoder cut (3a)
+CE_MODEL = os.environ.get("CE_MODEL", "Xenova/ms-marco-MiniLM-L-6-v2")
+CE_CACHE_PATH = os.environ.get("CE_CACHE_PATH", ".cache/ce_scores.sqlite")
+CE_KEEP = int(os.environ.get("CE_KEEP", "40"))           # candidates that survive the cross-encoder cut
+CE_LANE_QUOTA = int(os.environ.get("CE_LANE_QUOTA", "2"))  # best-N per lane survive the cut regardless of score
+CE_DOC_WORDS = int(os.environ.get("CE_DOC_WORDS", "160"))
+CE_WEIGHT = float(os.environ.get("CE_WEIGHT", "1.0"))    # weight of the cross-encoder rank vs the fused rank
+RERANK_V2_SNIPPET_WORDS = int(os.environ.get("RERANK_V2_SNIPPET_WORDS", "22"))
+RERANK_V2_MAX = int(os.environ.get("RERANK_V2_MAX", "46"))  # most candidates the LLM reranker sees
+USE_CHAINS = _bool("USE_CHAINS", "false")                # version chains for changing facts (3c)
+CHAIN_SEEDS = int(os.environ.get("CHAIN_SEEDS", "6"))      # top candidates whose neighbourhood is searched for versions
+# Extras are scored like any candidate; a source's bonus is added to its combined rank score. 1/(60+r) is 0.0164 at r=1, so
+# 0.012 lifts an extra to roughly the level of a top-5 first-stage hit without overriding a clearly better candidate.
+USE_NEIGHBORS_V2 = _bool("USE_NEIGHBORS_V2", "false")    # records adjacent to the best candidates (transcript question/answer pairs)
+NEIGHBOR_SEEDS = int(os.environ.get("NEIGHBOR_SEEDS", "6"))
+NEIGHBOR_SPAN = int(os.environ.get("NEIGHBOR_SPAN", "2"))
+EXTRA_BONUS = {"neighbors": float(os.environ.get("BONUS_NEIGHBORS", "0.006")), "anchor": float(os.environ.get("BONUS_ANCHOR", "0.012")), "chain": float(os.environ.get("BONUS_CHAIN", "0.008")),
+               "people": float(os.environ.get("BONUS_PEOPLE", "0.008")), "ledger": float(os.environ.get("BONUS_LEDGER", "0.012"))}
+EXTRAS_MAX = int(os.environ.get("EXTRAS_MAX", "14"))      # most guaranteed extra candidates (chains / anchor / people / ledger)
+USE_ANCHOR = _bool("USE_ANCHOR", "false")                # anchor-then-window for relative time (3d)
+USE_PEOPLE = _bool("USE_PEOPLE", "false")                # person resolution for shared first names (3e)
+USE_LEDGER = _bool("USE_LEDGER", "false")                # commitments ledger lane (3f)
+USE_PRECISE_MASKING = _bool("USE_PRECISE_MASKING", "false")  # fewer false-positive secret masks (3g)
 
 # --- Concurrency / rate limiting / safety -----------------------------------
 WORKERS = int(os.environ.get("WORKERS", "4"))
@@ -109,6 +147,10 @@ USE_HYDE_ANSWER_SKETCH = os.environ.get("USE_HYDE_ANSWER_SKETCH", "false").lower
 USE_DATE_AGENDA = os.environ.get("USE_DATE_AGENDA", "false").lower() not in {"0", "false", "no"}
 USE_DATE_RESOLVER = os.environ.get("USE_DATE_RESOLVER", "false").lower() not in {"0", "false", "no"}
 DATE_AGENDA_CAP = int(os.environ.get("DATE_AGENDA_CAP", "12"))
+
+# --- Writer v2 (Phase 4): soft quote match, partial answers, version-chain hint, computed arithmetic ------------------
+WRITER_V2 = _bool("WRITER_V2", "false")
+QUOTE_SOFT_THRESHOLD = float(os.environ.get("QUOTE_SOFT_THRESHOLD", "0.85"))
 
 # --- Answer writer -----------------------------------------------------------
 EVIDENCE_UNITS = 14

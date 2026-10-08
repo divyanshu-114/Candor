@@ -338,6 +338,11 @@ def _names_response_format(exc: Exception) -> bool:
     return any(t in message for t in ("response_format", "json_object", "json mode", "json_schema"))
 
 
+def _names_param(exc: Exception, name: str) -> bool:
+    """Does the provider's error message name this request parameter ("Unsupported parameter: 'max_tokens'", ...)?"""
+    return name in str(exc).lower()
+
+
 def _is_failed_generation(exc: Exception) -> bool:
     """Groq's 400 for output that didn't close as valid JSON (usually a
     reasoning model that ran out of max_tokens). It says nothing about which
@@ -456,6 +461,7 @@ def _estimate_tokens(system: str, user: str, max_tokens: int) -> int:
     return (len(system) + len(user)) // 4 + max_tokens
 
 
+MAX_TOKENS_CEILING = 4096  # a truncated reasoning reply is retried with a larger budget, never above this
 MAX_SINGLE_WAIT_S = 60.0  # never sleep longer than this for any single wait
 
 
@@ -555,24 +561,30 @@ def _record_rate_limit_hit() -> None:
         _USAGE["rate_limit_hits"] += 1
 
 
+_THINK_RE = re.compile(r"<(think|thinking|reasoning)>.*?</\1>", re.S | re.I)
+_FENCE_RE = re.compile(r"```(?:json|JSON)?\s*(.*?)```", re.S)
+
+
 def _extract_json(text: str) -> dict[str, Any]:
-    """Robust JSON extraction from LLM output (strips code fences, finds first {...})."""
-    text = text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?", "", text)
-        text = re.sub(r"```$", "", text)
-        text = text.strip()
+    """Robust JSON extraction from LLM output.
 
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end >= start:
-        text = text[start:end + 1]
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as e:
-        LOG.warning("Failed to decode JSON: %s\nText was: %s", e, text)
-        return {}
+    Handles the habits seen across providers: <think>...</think> blocks before the answer, markdown code fences
+    (anywhere, not only at the start), prose before/after the object, and braces inside that prose. Tries every
+    '{' as the start of a JSON value and returns the first object that parses; {} (logged) when none does."""
+    text = _THINK_RE.sub(" ", text or "").strip()
+    fenced = _FENCE_RE.findall(text)
+    candidates = [f.strip() for f in fenced if "{" in f] + [text]
+    decoder = json.JSONDecoder()
+    for cand in candidates:
+        for m in re.finditer(r"\{", cand):
+            try:
+                value, _end = decoder.raw_decode(cand[m.start():])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict):
+                return value
+    LOG.warning("Failed to decode JSON from a model reply (%d chars)", len(text))
+    return {}
 
 
 def _retry_after_seconds(exc: Exception) -> float | None:
@@ -701,19 +713,23 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
     try_reasoning_effort = (reasoning_effort is not None and reasoning_effort_key not in provider.unsupported_params)
     retries_used = 0
     drops = 0  # parameter drops don't consume the backoff-retry budget (3 droppable params)
+    truncations = 0
     use_response_format = "response_format" not in provider.unsupported_params
 
-    for loop_i in range(max_retries + 3):
+    for loop_i in range(max_retries + 8):
         attempt = loop_i - drops  # backoff-retry counter
         _acquire_token_budget(provider, _estimate_tokens(system, user, max_tokens))
         try:
             kwargs: dict[str, Any] = dict(
                 model=model,
                 messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-                temperature=0.0,
                 timeout=config.LLM_TIMEOUT_S,
-                max_tokens=max_tokens,
             )
+            # Providers disagree on these: newer OpenAI models want max_completion_tokens and some reasoning
+            # models accept only the default temperature. Both are learned from a 400 and remembered per provider.
+            kwargs["max_completion_tokens" if "max_tokens" in provider.unsupported_params else "max_tokens"] = max_tokens
+            if "temperature" not in provider.unsupported_params:
+                kwargs["temperature"] = 0.0
             if use_response_format:
                 kwargs["response_format"] = {"type": "json_object"}
             else:
@@ -728,8 +744,30 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
             _budget_for(provider).update_from_headers(dict(raw.headers))
             response = raw.parse()
 
-            content = response.choices[0].message.content or "{}"
-            result = _extract_json(content)
+            message = response.choices[0].message
+            content = message.content or ""
+            if not content.strip():
+                # some reasoning models leave `content` empty and put the answer in a reasoning field
+                for attr in ("reasoning_content", "reasoning"):
+                    alt = getattr(message, attr, None)
+                    if isinstance(alt, str) and "{" in alt:
+                        content = alt
+                        break
+            result = _extract_json(content or "{}")
+
+            # A reasoning model can spend the whole token budget on hidden thinking and stop with finish_reason="length"
+            # and nothing usable. Retry with a doubled budget (twice at most) instead of failing the stage.
+            finish = getattr(response.choices[0], "finish_reason", None)
+            if not result and finish == "length" and truncations < 2 and max_tokens < MAX_TOKENS_CEILING:
+                truncations += 1
+                new_budget = min(max_tokens * 2, MAX_TOKENS_CEILING)
+                LOG.warning("Provider %r model %s ran out of tokens (%d) with no usable reply; retrying with %d",
+                            provider.name, model, max_tokens, new_budget)
+                _record_usage(getattr(getattr(response, "usage", None), "prompt_tokens", 0) or 0,
+                              getattr(getattr(response, "usage", None), "completion_tokens", 0) or 0)
+                max_tokens = new_budget
+                drops += 1
+                continue
 
             usage = getattr(response, "usage", None)
             prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
@@ -760,6 +798,19 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
                 provider.unsupported_params.add("seed")
                 drops += 1
                 continue
+
+            # (c) token-limit parameter name / temperature: adapt to the provider, once each, not counted as a backoff.
+            if _is_unsupported_param_error(e) and not _is_auth_error(e):
+                if "max_tokens" not in provider.unsupported_params and _names_param(e, "max_tokens"):
+                    LOG.warning("Provider %r rejected max_tokens; using max_completion_tokens from now on", provider.name)
+                    provider.unsupported_params.add("max_tokens")
+                    drops += 1
+                    continue
+                if "temperature" not in provider.unsupported_params and _names_param(e, "temperature"):
+                    LOG.warning("Provider %r rejected temperature; using its default from now on", provider.name)
+                    provider.unsupported_params.add("temperature")
+                    drops += 1
+                    continue
 
             # (c) a 400 that names response_format / JSON mode: drop it,
             # rely on text extraction (checked before the generic
