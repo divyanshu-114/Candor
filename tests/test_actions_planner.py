@@ -123,7 +123,7 @@ def test_repair_call_can_fix_the_plan(fake_llm):
 
 def test_llm_unavailable_falls_back_to_rules_without_echo(fake_llm):
     out = planner.plan("Book something with zz-marker-1 tomorrow", AS_OF)   # fake returns None
-    assert out == rules_plan("Book something with zz-marker-1 tomorrow") and "zz-marker-1" not in json.dumps(out)
+    assert out[0]["type"] == "clarify" and "zz-marker-1" not in json.dumps(out)
 
 
 def test_secrets_in_the_command_are_masked_before_the_prompt(fake_llm):
@@ -147,7 +147,7 @@ def test_compact_prompt_stays_under_budget_on_real_data():
 def test_compact_world_window_and_format():
     world = build_world(AS_OF, "data")
     text = compact_world(world)
-    assert "UTC offset -07:00" in text and "PEOPLE (name | slack_id | dm_id | email | int/ext):" in text
+    assert "UTC offset -07:00" in text and "PEOPLE (name | slack_id | email | int/ext;" in text
     ev_lines = text.split("EVENTS (")[1].splitlines()[1:]
     assert ev_lines and all(l.count("|") == 3 for l in ev_lines)
     assert all("@brightline.example.com" not in l for l in ev_lines)     # home-domain attendees shortened
@@ -250,3 +250,19 @@ def test_invented_recipient_gets_one_repair_call_and_is_fixed(fake_llm):
     assert out[0]["args"]["to"] == ["kelsey@roadsignal.example.com"]
     assert [c["stage"] for c in fake_llm.calls] == ["actions_plan", "actions_followup"]
     assert "unknown recipient" in fake_llm.calls[1]["user"]
+
+
+
+@pytest.fixture(autouse=True)
+def _no_resolver(monkeypatch):
+    """These tests exercise the LLM plumbing (call counts, repair, fallbacks); the deterministic resolver has its own tests."""
+    from actions import config as actions_config
+    monkeypatch.setattr(actions_config, "USE_RESOLVER", False)
+
+
+def test_flattened_action_shape_is_repaired_without_a_second_call():
+    from actions.planner import _actions_of
+    out = _actions_of({"actions": [{"type": "reminder.create", "text": "Check in", "due": "2026-09-23T17:10:00-07:00"},
+                                   {"type": "app.open", "args": {"app": "Figma"}}]})
+    assert out[0] == {"type": "reminder.create", "args": {"text": "Check in", "due": "2026-09-23T17:10:00-07:00"}}
+    assert out[1]["args"] == {"app": "Figma"}

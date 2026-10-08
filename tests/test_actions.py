@@ -1,3 +1,4 @@
+import pytest
 """Tests for actions/ (TextOS planner), fake LLM, no network."""
 import json
 import tempfile
@@ -90,7 +91,7 @@ def test_plan_uses_rules_when_step1_llm_unavailable():
     else is a generic clarify that does not echo the command."""
     with patch("memory.llm.GROQ_API_KEY", None):
         actions = plan("Open Figma", "2026-09-16T10:00:00-07:00")
-        vague = plan("Message Kelsey about zq-marker-77", "2026-09-16T10:00:00-07:00")
+        vague = plan("Do the thing with zq-marker-77 soon", "2026-09-16T10:00:00-07:00")
     assert [a["type"] for a in actions] == ["app.open"]
     assert vague[0]["type"] == "clarify" and "zq-marker-77" not in vague[0]["args"]["question"]
 
@@ -208,3 +209,11 @@ def test_cli_ids_recomputes_only_the_requested_subset():
             assert second_pass[cid] == first_pass[cid], f"{cid} was untouched by --ids but changed anyway"
         for cid in ("Q-1", "Q-3"):
             assert json.loads(second_pass[cid])["actions"][0]["type"] == "clarify"
+
+
+
+@pytest.fixture(autouse=True)
+def _no_resolver(monkeypatch):
+    """These tests exercise the LLM plumbing (call counts, repair, fallbacks); the deterministic resolver has its own tests."""
+    from actions import config as actions_config
+    monkeypatch.setattr(actions_config, "USE_RESOLVER", False)

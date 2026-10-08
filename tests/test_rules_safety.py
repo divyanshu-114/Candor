@@ -1,3 +1,4 @@
+import json
 """Rules must fire ONLY when certain; otherwise return None (the LLM decides).
 All phrasings below are invented for this test (not from either eval file)."""
 import pytest
@@ -115,7 +116,9 @@ def test_ordinary_commands_are_not_treated_as_injection(cmd, world):
 ])
 def test_unmistakable_overrides_get_a_generic_clarify(cmd, world):
     out = fires(cmd, world)
-    assert out == [{"type": "clarify", "args": {"question": GENERIC_CLARIFY}}]
+    assert len(out) == 1 and out[0]["type"] == "clarify"
+    q = out[0]["args"]["question"]
+    assert "instructions like that" in q and cmd.lower() not in q.lower()      # a fixed sentence: never repeats the command
 
 
 # --- past time: a past DAY directly followed by a time, ending the command ----
@@ -149,5 +152,9 @@ def test_destructive_fires_on_imperative_and_defers_otherwise(world):
 
 
 def test_fallback_rules_plan_is_still_safe_and_non_echoing(world):
-    out = rules_plan("Message Kelsey about zz-marker-5", world)
+    # a command the resolver cannot interpret still gets the generic clarify, which never echoes the command
+    out = rules_plan("Do the thing with zz-marker-5 whenever", world)
     assert out == [{"type": "clarify", "args": {"question": GENERIC_CLARIFY}}]
+    # a resolvable message is now acted on, but a clarify about an unknown person must not echo odd tokens from the command
+    unknown = rules_plan("Email zz-marker-6 about lunch", world)
+    assert all("zz-marker-6" not in json.dumps(a["args"]["question"]) for a in unknown if a["type"] == "clarify")

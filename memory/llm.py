@@ -165,6 +165,11 @@ _ROLE_ORDER: dict[str, list[str] | None] = _build_role_order()
 _ALL_EXHAUSTED_LOGGED: set[str] = set()  # role names already logged as "all providers exhausted"
 
 
+def is_available() -> bool:
+    """True when at least one configured provider has a key and has not been taken out for the process."""
+    return any(p.api_key and _provider_is_live(p) for p in _PROVIDERS)
+
+
 def reload_providers() -> None:
     """Rebuild the provider list from the current environment. Only meant
     for tests that monkeypatch env vars; production never needs this.
