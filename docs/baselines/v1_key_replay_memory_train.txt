@@ -1,0 +1,71 @@
+Writer mentioned a date after as_of for question id=MEM-TR-02; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-03; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-01; re-asking once
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Writer mentioned a date after as_of for question id=MEM-TR-13; re-asking once
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Hop2 stage degraded (LLM call failed or returned invalid JSON) for question: 'What did Sarah Kim say about SSO?'
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+      analysis:     0.0 prompt +    0.0 completion =     0.0
+          hop2:     0.0 prompt +    0.0 completion =     0.0
+        rerank:     0.0 prompt +    0.0 completion =     0.0
+        writer:     0.0 prompt +    0.0 completion =     0.0
+         TOTAL:     0.0 tokens/question
+
+=== memory_train.jsonl v1 KEY(replay) | n=27 | with answers | frozen=strong,fast | key=yes ===
+category                n  retrieval  answer  abst/ans
+abstention              2       1.00    1.00     0/0  
+as_of_time_travel       2       0.50    0.50     0/2  
+commitment_status       3       1.00    0.67     0/3  
+conditional             1       1.00    1.00     0/1  
+correction              1       1.00    1.00     0/1  
+cross_source            1       0.00    0.00     0/1  
+disagreement            1       0.00    1.00     0/1  
+edited_record           1       1.00    1.00     0/1  
+entity_disambiguation   1       1.00    1.00     0/1  
+knowledge_update        2       1.00    1.00     0/2  
+multi_hop               1       1.00    0.00     0/1  
+ownership               2       1.00    0.50     0/2  
+preference              1       1.00    1.00     0/1  
+prompt_injection        1       0.00    0.00     0/1  
+reported_speech         1       1.00    0.00     0/1  
+single_fact             3       0.67    0.67     0/3  
+temporal                2       0.50    0.00     0/2  
+work_app                1       1.00    0.00     1/1  
+
+RETRIEVAL score 0.76  complete@5/10/20 = 0.64/0.76/0.76  MRR 0.6373  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.593 (16/27)  abstained on answerable 1/25  FALSE-ANSWER rate on unanswerable 0/2 = 0.00
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=0 b=0 c=1 d=0 e=0  (total 1) [('MEM-TR-14', 'c')]
+tokens/question 0  seconds/question 0.23 (wall 1.8s)  degraded stages {'frozen_cache_miss': 13, 'writer': 13, 'rerank': 11, 'hop2': 1, 'analysis': 9}

@@ -25,6 +25,7 @@ class _Recorder:
         self.calls: list[dict[str, Any]] = []
         self.pool_size: int | None = None
         self.rerank_valid: bool | None = None
+        self.details: dict[str, Any] = {}
         self.started = time.monotonic()
 
 
@@ -65,6 +66,15 @@ def set_rerank_valid(valid: bool) -> None:
         rec.rerank_valid = valid
 
 
+def set_detail(key: str, value: Any) -> None:
+    """Attach a small JSON-able fact about this question (evidence ids, abstain
+    reason, writer verdict). WHY: the abstention diagnostics need to know *why* an
+    answer was withheld without re-running the pipeline."""
+    rec = _current()
+    if rec is not None:
+        rec.details[key] = value
+
+
 def finish(qid: str) -> dict[str, Any]:
     rec = _current()
     if rec is None:
@@ -90,4 +100,5 @@ def finish(qid: str) -> dict[str, Any]:
         "seconds": round(elapsed, 3),
         "candidate_pool_size": rec.pool_size,
         "rerank_valid": rec.rerank_valid,
+        "details": rec.details,
     }

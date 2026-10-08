@@ -1,0 +1,22 @@
+
+=== v2_holdout.jsonl v1 NOKEY | n=25 | with answers | frozen=strong,fast | key=no ===
+category                n  retrieval  answer  abst/ans
+abstention              5       1.00    0.00     0/0  
+as_of_time_travel       3       1.00    0.00     0/3  
+commitment_status       1       0.00    0.00     0/1  
+cross_source            1       1.00    0.00     0/1  
+deleted_message         2       1.00    0.50     0/1  
+disagreement            2       0.50    0.00     0/2  
+entity_disambiguation   2       1.00    0.00     0/2  
+knowledge_update        1       1.00    1.00     0/1  
+multi_hop               1       1.00    0.00     0/1  
+prompt_injection        1       1.00    1.00     0/1  
+reported_speech         1       0.00    0.00     0/1  
+temporal                2       0.00    0.00     0/2  
+work_app                3       1.00    0.67     0/3  
+
+RETRIEVAL score 0.75  complete@5/10/20 = 0.6842/0.7368/0.8421  MRR 0.5596  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.200 (5/25)  abstained on answerable 0/19  FALSE-ANSWER rate on unanswerable 6/6 = 1.00
+hard failures: 0
+ABSTENTION causes on answerable questions: a=0 b=0 c=0 d=0 e=0  (total 0)
+tokens/question 0  seconds/question 0.29 (wall 2.0s)  degraded stages {'analysis': 25, 'rerank': 25}

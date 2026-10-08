@@ -473,6 +473,7 @@ def _finalize_sources(verified_ids: list[str], evidence_ids: list[str], visible_
 def _abstain_row(qid: str, retrieved_ids: list[str], reason_for_log: str = "") -> dict:
     if reason_for_log:
         LOG.info("Abstaining for question id=%s: %s", qid, reason_for_log)
+    diagnostics.set_detail("abstain_reason", reason_for_log or "unspecified")
     return {
         "id": qid,
         "answer": ABSTAIN_ANSWER,
@@ -582,6 +583,7 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         retrieved_ids, question, as_of, store, return_display=True)
 
     intent = meta.get("analysis", {}).get("intent", "other")
+    diagnostics.set_detail("evidence_ids", evidence_ids)
     written = _run_writer(evidence, question, as_of, intent)
     if written is None:
         diagnostics.mark_degraded("writer")
@@ -594,6 +596,8 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         }
 
     verified_ids = _verify_support(written["support"], display_text_by_id)
+    diagnostics.set_detail("writer", {"answerable": written["answerable"], "support": written["support"],
+                                       "verified": verified_ids})
     if not written["answerable"] or not verified_ids:
         return _abstain_row(qid, retrieved_ids,
                              f"answerable={written['answerable']}, support quotes verified={len(verified_ids)}")
