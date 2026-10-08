@@ -233,7 +233,8 @@ def run_v2(question: str, as_of: str, k: int, store: MemoryStore, index: MemoryI
         from memory import people as people_mod
         resolution = people_mod.resolve(question, visible_ids, store, idf)
         meta["people"] = resolution
-    pool, lane_rank, variants = first_stage(question, analysis, visible_ids, store, index, people_variants(question, resolution))
+    pool, lane_rank, variants = first_stage(question, analysis, visible_ids, store, index,
+                                            people_variants(question, resolution) if config.PEOPLE_EXTRAS else None)
     meta["variants"] = [v for v, _w in variants]
     meta["pool_size"] = len(pool)
     meta["lane_rank"] = {uid: lane_rank[uid] for uid, _ in pool}
@@ -241,7 +242,7 @@ def run_v2(question: str, as_of: str, k: int, store: MemoryStore, index: MemoryI
     fused_rank = {uid: r for r, uid in enumerate(pool_ids, 1)}
     if config.USE_ANCHOR:
         extras["anchor"] = anchor_extras(question, analysis, visible_ids, visible_units, store, index, meta)
-    if resolution and resolution.get("by") != "name":
+    if resolution and resolution.get("by") != "name" and config.PEOPLE_EXTRAS:
         from memory import people as people_mod
         names = [resolution["resolved"]] if resolution.get("resolved") else [n for n, _s in resolution["candidates"]]
         got: list[str] = []
