@@ -76,10 +76,20 @@ def test_verify_support_is_robust_to_punctuation_and_case():
     assert _verify_support(support, display) == ["SL-OLD"]
 
 
-def test_verify_support_ignores_quotes_for_ids_outside_the_evidence_shown():
+def test_verify_support_ignores_quotes_for_ids_outside_the_evidence_shown(monkeypatch):
+    from memory import config
+    monkeypatch.setattr(config, "WRITER_V2", False)       # v1 contract: the cited id must itself contain the quote
     display = {"SL-OLD": "Launch is planned for September 30."}
     support = [{"id": "SL-NOT-SHOWN", "quote": "Launch is planned for September 30"}]
     assert _verify_support(support, display) == []
+
+
+def test_v2_attributes_a_misciteded_quote_only_to_a_record_that_was_shown(monkeypatch):
+    from memory import config
+    monkeypatch.setattr(config, "WRITER_V2", True)
+    display = {"SL-OLD": "Launch is planned for September 30."}
+    assert _verify_support([{"id": "SL-NOT-SHOWN", "quote": "Launch is planned for September 30"}], display) == ["SL-OLD"]
+    assert _verify_support([{"id": "SL-NOT-SHOWN", "quote": "Launch is planned for October 21"}], display) == []
 
 
 # sources never include ids outside the evidence package / visible set
