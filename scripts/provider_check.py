@@ -56,6 +56,24 @@ def stages() -> dict:
     }
 
 
+NO_PROVIDER_BANNER = """\
+==============================================================================
+NO LLM SERVICE IS CONFIGURED, SO THERE IS NOTHING TO CHECK.
+To enable one, put its key in .env (or the environment): OPENAI_API_KEY, OPENROUTER_API_KEY,
+ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY, or CUSTOM_API_KEY (+ CUSTOM_BASE_URL and models).
+Without a key every model stage falls back: question analysis uses simple rules, the LLM rerank is skipped
+(the local search + relevance-model order is used), answers are extractive sentences and cannot say
+"I don't know" reliably, and action plans come from rules only. Quality is lower than with a model.
+=============================================================================="""
+
+
+def live_providers() -> list:
+    """Providers that have a key and are not marked dead. WHY: with no key `llm._PROVIDERS` still holds named entries
+    without keys, so an empty table used to look like a pass."""
+    from memory import llm
+    return [p for p in llm._PROVIDERS if p.api_key and llm._provider_is_live(p)]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--providers", default=os.environ.get("LLM_PROVIDERS", "groq,openrouter"))
@@ -66,6 +84,9 @@ def main() -> int:
     os.environ["LLM_PROVIDERS"] = a.providers
     from memory import llm
     llm.reload_providers()
+    if not live_providers():
+        print(NO_PROVIDER_BANNER, file=sys.stderr)
+        return 2
     wanted = {s.strip() for s in a.stages.split(",")}
     roles = [r.strip() for r in a.roles.split(",")]
     table, failures = [], 0
