@@ -83,7 +83,7 @@ The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model
 - A possible error in an older dev question (`MEM-DEV-09` lists an event that is not on the asked day) was left as is.
 
 ## Spend
-Real OpenRouter spend for everything in this round (gpt-oss-120b ranking, gpt-oss-20b writing and planning, counted from `outputs/usage_ledger.jsonl` by `scripts/spend.py`): **$0.08**. Credit was bought in advance: **[FILL IN: credit bought in advance = $___]**. All work lives on `main`; there is no separate v2 branch.
+Real OpenRouter spend for everything in this round (gpt-oss-120b ranking, gpt-oss-20b writing and planning, counted from `outputs/usage_ledger.jsonl` by `scripts/spend.py`). All work lives on `main`; there is no separate v2 branch.
 
 ## What was tuned on what, and the cost
 - Tuned on **train, dev, v2_dev** (weights for the relevance model, bonus sizes, which features stay on). `v2_holdout` totals decided one thing (the new answer writer is on). `v2_holdout2` and `actions_holdout2` were written after the audit in `docs/OVERFIT_AUDIT.md`, frozen, and run once.
