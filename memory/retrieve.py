@@ -304,7 +304,7 @@ def retrieve(question: str, as_of: str, k: int = config.RESULT_K,
                 origins[uid] = "date_agenda"
 
     # Hop 2, OR (step 4d) the date resolver that replaces it when the
-    # question needs a lookup first (e.g. "the day I fly") and the flag is on.
+    # question needs a lookup first (e.g. "the day I travel") and the flag is on.
     if config.USE_DATE_RESOLVER and analysis["needs_followup"]:
         snippets = []
         for uid, _, _ in pool[:12]:
@@ -316,7 +316,7 @@ def retrieve(question: str, as_of: str, k: int = config.RESULT_K,
         if snippets:
             prompt = (f"Question: {question}\nAs of: {as_of}\nTop snippets:\n" +
                       "\n".join(snippets) +
-                      "\n\nResolve any date this question needs (e.g. 'the day I fly' -> an actual date found "
+                      "\n\nResolve any date this question needs (e.g. 'the day I travel' -> an actual date found "
                       "in the snippets) and suggest follow-up search terms.\n"
                       "Return JSON: {\"resolved_dates\": [\"YYYY-MM-DD\", ...], \"extra_queries\": [\"...\", ...]}.")
             res = _safe_chat_json("IR assistant resolving a date needed for a follow-up search.", prompt,

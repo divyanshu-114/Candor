@@ -21,12 +21,12 @@ def _clean_text(text: str) -> Tuple[str, bool]:
 def _email_name_map(data_dir: Path, slack_names: Dict[str, str]) -> Dict[str, str]:
     """Resolve identities only for search metadata; display text stays untouched."""
     result: Dict[str, str] = {}
-    for user_id, name in slack_names.items():
-        # Slack's directory does not include email addresses, so infer the common
-        # internal address only when it is unambiguous and augment it below from
-        # explicit mail/calendar headers.
-        if name:
-            result.setdefault(name.lower().replace(" ", ".") + "@brightline.example.com", name)
+    # Slack's users.json carries each member's email: use it (the old code guessed first.last@<our domain>).
+    users_path = data_dir / "connectors/slack/users.json"
+    if users_path.exists():
+        for u in json.loads(users_path.read_text()):
+            if u.get("email") and (u.get("real_name") or u.get("name")):
+                result.setdefault(u["email"].lower(), u.get("real_name") or u.get("name"))
     for path, fields in (
         (data_dir / "connectors/gmail/messages.jsonl", ("from", "to", "cc")),
         (data_dir / "connectors/google_calendar/events.jsonl", ("organizer",)),

@@ -303,8 +303,8 @@ name with their stated reason; do not pick a winner.
 
 WHO SAID WHAT / REPORTED SPEECH: attribute claims to the person who said them. When the records
 contain BOTH a person's report of what another person said or wanted AND that other person's own
-statement, give three parts in this order: (1) who reported what, labelled second-hand (e.g. "Dana
-said that John told her ..."); (2) the person's own statement, first-hand (e.g. "John himself wrote
+statement, give three parts in this order: (1) who reported what, labelled second-hand (e.g. "Pat
+said that Lee told her ..."); (2) the person's own statement, first-hand (e.g. "Lee himself wrote
 ...") ; (3) the final decision, if any record states one. Never attribute a statement to a record
 whose speaker_known is "false" -- call them "an unidentified speaker". Never merge different people
 who share a first name; always use full names.

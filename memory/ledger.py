@@ -34,7 +34,7 @@ ACTION = re.compile(
     r"\b(?:send|write|put|set up|setup|create|update|fix|ping|ask|find|get|let \w+ know|schedule|review|share|post|bring|draft|"
     r"check|follow up|confirm|prepare|book|call|email|loop|pull|run|talk to|reach out|spin|line up|add|submit|test|rerun|"
     r"look at|go through|send over|make sure|move|build|ship|publish|clone|backfill|rotate|tell|introduce|make|swap|darken|mock|"
-    r"do a|walk|walkthrough|handle|take|own|keep|bring|work on|reach|sync|investigate|document|record|track|owe)\b", re.I)
+    r"do a|handle|take|own|keep|bring|work on|reach|sync|investigate|document|record|track|owe)\b", re.I)
 NOT_A_TASK = re.compile(
     r"\b(?:hear|see (?:my|the|that)|stop (?:sharing|the recording)|recap|take that back|find it|be honest|i promise\b|i think|i guess|"
     r"let me (?:just )?(?:be|say|think|stop|take|see|recap|find it)|by popular demand|didn'?t|haven'?t)\b", re.I)
@@ -44,11 +44,11 @@ DEADLINE = re.compile(
     r"the \d{1,2}(?:st|nd|rd|th)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* \d{1,2})\b|"
     r"\buntil (?:(?:next )?(?:mon|tues?|wednes|thurs?|fri|satur|sun)day|the \d{1,2}(?:st|nd|rd|th))\b|"
     r"\b(?:next|this) (?:week|(?:mon|tues?|wednes|thurs?|fri|satur|sun)day)\b|\btomorrow\b|\btonight\b|"
-    r"\bbefore (?:launch|the (?:board|launch|meeting|call))\b", re.I)
+    r"\bbefore (?:the )?(?:launch|release|deadline|meeting|call|event)\b", re.I)
 DONE = re.compile(r"\b(?:done|sent|attached|here'?s|went out|just sent|posted|merged|shipped|ready|finished|completed|landed|"
                   r"is up|are up|is in|are in|submitted|created|went through|as promised|is live|all set)\b", re.I)
 EXTEND = re.compile(r"\b(?:push|pushed|extend|extension|until|more time|can i have|slip|later|moved? (?:it|to)|delay\w*)\b", re.I)
-CANCEL = re.compile(r"\b(?:scratch|cancel\w*|no need|never ?mind|not needed|don'?t need|won'?t need|pushed the demo|dead|off the table)\b", re.I)
+CANCEL = re.compile(r"\b(?:scratch|cancel\w*|no need|never ?mind|not needed|don'?t need|won'?t need|pushed (?:it|the \w+|them) to|dead|off the table)\b", re.I)
 _WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 _MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
 GENERIC = QUESTION_WORDS | set(_WEEKDAYS) | {"done", "today", "tomorrow", "week", "next", "morning", "tonight", "monday", "meeting",

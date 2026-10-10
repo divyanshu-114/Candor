@@ -26,9 +26,11 @@ _STOP = {"the", "a", "an", "my", "our", "your", "of", "to", "with", "and", "meet
 _SOFT_STOP = {"meeting", "call"}
 # A message that DESCRIBES a fact instead of stating it ("the corrected NRR", "the new launch date", "what we decided"): the value lives in
 # memory. A modifier alone is not enough ("the updated pricing summary" is a document), so it must precede a fact-like noun.
-_FACT_NOUN = r"(?:launch\s+date|launch|nrr|arr|mrr|churn|retention|numbers?|figures?|metrics?|dates?|deadline|price|prices|total|count|amount|rate|status|decision|estimate|forecast|headcount|revenue|budget|timeline|schedule)(?:\s+date)?"
+_FACT_NOUN = r"(?:launch\s+date|launch|churn|retention|numbers?|figures?|metrics?|dates?|deadline|price|prices|total|count|amount|rate|status|decision|estimate|forecast|headcount|revenue|budget|timeline|schedule)(?:\s+date)?"
+_MODIFIER = r"(?:corrected|correct|new|updated|latest|current|final|revised|real|actual)"
+_ACRONYM = r"(?-i:[A-Z]{2,6})"      # an all-caps token after a modifier names a metric or figure ("the corrected KPI")
 _MEMORY_REF = re.compile(
-    rf"\b(?:corrected|correct|new|updated|latest|current|final|revised|real|actual)\s+(?:\w+\s+){{0,2}}?{_FACT_NOUN}\b|"
+    rf"\b{_MODIFIER}\s+(?:\w+\s+){{0,2}}?(?:{_FACT_NOUN}|{_ACRONYM})\b|"
     r"\bwhat\s+we\s+(?:decided|agreed|said)\b|\bthe\s+(?:numbers|figures?|status|decision)\b(?!\s+(?:are|is)\s+ready)", re.I)
 _MSG_VERBS = r"(?:tell|message|ping|dm|text|slack|let)"
 _MAIL_VERBS = r"(?:email|e-mail|mail)"
@@ -484,7 +486,7 @@ def memory_lookups(command: str) -> list[str]:
     for m in re.finditer(r"\bwhat\s+we\s+(?:decided|agreed|said)(?:\s+(?:about|on|regarding)\s+(?P<topic>[^,.;]+?))?(?=\s+(?:and|then)\b|[,.;]|$)", command, re.I):
         topic = (m.group("topic") or "").strip()
         out.append(f"What did we decide about {topic}?" if topic else "What did we decide?")
-    for m in re.finditer(rf"\b(?:corrected|correct|new|updated|latest|current|final|revised|real|actual)\s+(?:\w+\s+){{0,2}}?{_FACT_NOUN}\b", command, re.I):
+    for m in re.finditer(rf"\b{_MODIFIER}\s+(?:\w+\s+){{0,2}}?(?:{_FACT_NOUN}|{_ACRONYM})\b", command, re.I):
         phrase = m.group(0).strip()
         out.append(f"What is the {phrase}?")
     return list(dict.fromkeys(out))[:2]

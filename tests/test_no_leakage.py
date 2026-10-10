@@ -76,3 +76,78 @@ def test_no_needed_record_ids_in_code(name):
 def test_eval_files_exist_and_are_nonempty():
     for name in EVAL_FILES:
         assert (ROOT / "evals" / name).stat().st_size > 0, name
+
+
+# --- data-derived distinctive terms must not appear in implementation code (comments / docstrings excluded) ------------------------
+import ast
+import re
+
+_GENERIC_OK = {"linear", "github", "figma", "notion", "slack", "gmail", "google", "meet", "zoom", "calendar", "chatgpt", "codex", "email",
+               "digest", "example", "weekly", "pipeline", "planner", "daily", "engineer"}  # app / product names a planner legitimately knows, and the generic source names
+
+
+def _code_words(path: Path) -> str:
+    tree = ast.parse(path.read_text())
+    docstrings = {id(n.body[0].value) for n in ast.walk(tree)
+                  if isinstance(n, (ast.Module, ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)) and n.body
+                  and isinstance(n.body[0], ast.Expr) and isinstance(getattr(n.body[0], "value", None), ast.Constant)
+                  and isinstance(n.body[0].value.value, str)}
+    out = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Constant) and isinstance(n.value, str) and id(n) not in docstrings:
+            out.append(n.value)
+        elif isinstance(n, ast.Name):
+            out.append(n.id)
+        elif isinstance(n, ast.Attribute):
+            out.append(n.attr)
+    return " ".join(out).lower()
+
+
+def _data_terms() -> set[str]:
+    """People, organisations, products, places and projects named in the data (capitalised words of names / titles / summaries)."""
+    data = ROOT / "data"
+    terms: set[str] = set()
+    for u in json.loads((data / "connectors/slack/users.json").read_text()):
+        terms.update(re.findall(r"[A-Za-z]{4,}", u.get("real_name") or ""))
+    for line in (data / "connectors/google_calendar/events.jsonl").read_text().splitlines():
+        ev = json.loads(line)
+        terms.update(re.findall(r"\b[A-Z][a-z]{3,}\b", ev.get("summary", "")))
+        for a in ev.get("attendees", []):
+            dom = a.get("email", "").split("@")[-1].split(".")[0]
+            if len(dom) > 4:
+                terms.add(dom)
+    for line in (data / "connectors/gmail/messages.jsonl").read_text().splitlines():
+        m = json.loads(line)
+        for hdr in [m.get("from", "")] + m.get("to", []):
+            terms.update(re.findall(r"\b[A-Z][a-z]{3,}\b", hdr.split("<")[0]))
+    for f in (data / "native/meetings").glob("*.json"):
+        terms.update(re.findall(r"\b[A-Z][a-z]{3,}\b", json.loads(f.read_text()).get("title", "")))
+    return {t.lower() for t in terms} - _GENERIC_OK - {"alex"}   # the memory owner's first name is allowed in no code either; see below
+
+
+def test_no_data_specific_names_in_implementation_code():
+    terms = _data_terms()
+    hits = {}
+    for path in CODE_FILES:
+        words = set(re.findall(r"[a-z]{4,}", _code_words(path)))
+        for t in terms & words:
+            hits.setdefault(t, []).append(path.name)
+    assert not hits, f"names from the data appear in code (strings/identifiers): {hits}"
+
+
+def test_no_eval_file_distinctive_phrases_in_code():
+    """Six-word runs from questions / commands must not appear verbatim in code strings."""
+    blob = " ".join(_code_words(p) for p in CODE_FILES)
+    bad = []
+    for name in EVAL_FILES + ["actions_train.jsonl", "actions_dev.jsonl", "actions_v2_dev.jsonl", "v2_holdout2.jsonl", "actions_holdout2.jsonl"]:
+        path = ROOT / "evals" / name
+        if not path.exists():
+            continue
+        for line in path.read_text().splitlines():
+            r = json.loads(line)
+            for key in ("question", "command"):
+                words = re.findall(r"[a-z0-9]+", r.get(key, "").lower())
+                for i in range(len(words) - 5):
+                    if " ".join(words[i:i + 6]) in " ".join(re.findall(r"[a-z0-9]+", blob)):
+                        bad.append((name, " ".join(words[i:i + 6])))
+    assert not bad, f"6-word phrases from eval files found in code: {bad[:5]}"

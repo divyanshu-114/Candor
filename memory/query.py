@@ -25,7 +25,7 @@ Keys:
 - "entities": people/organizations/products mentioned
 - "dates": ISO date strings (YYYY-MM-DD) explicit or implied (e.g. "tomorrow"), resolved relative to 'as_of'
 - "ambiguous_person": null, or a first name that might refer to multiple people
-- "needs_followup": true if the question needs a lookup first (e.g. "the day I fly", "the person who presented")
+- "needs_followup": true if the question needs a lookup first (e.g. "the day I travel", "the person who presented")
 - "answer_sketch": two short invented sentences, in the style of a Slack message or meeting remark, that WOULD answer
   the question -- using concrete words a real record might use (invented names/numbers are fine here, this is only
   used to help a search engine match vocabulary, never shown to the user)
@@ -34,17 +34,16 @@ Output ONLY JSON, no conversational text. 'as_of' is "today" for the user.
 
 EXAMPLES (made-up topics, not the real dataset; as_of = 2026-10-15):
 User: "Who took over the widget inventory audit after the retreat?"
-{"intent": "ownership", "wants_latest": true, "wants_history": true, "sub_queries": ["widget inventory audit owner", "retreat widget audit"], "entities": ["widget inventory audit"], "dates": [], "ambiguous_person": null, "needs_followup": true, "answer_sketch": "Priya is taking over the widget inventory audit starting Monday. She'll have the first count done by Friday."}
+{"intent": "ownership", "wants_latest": true, "wants_history": true, "sub_queries": ["widget inventory audit owner", "retreat widget audit"], "entities": ["widget inventory audit"], "dates": [], "ambiguous_person": null, "needs_followup": true, "answer_sketch": "Casey is taking over the widget inventory audit starting Monday. She'll have the first count done by Friday."}
 
 User: "How many times did we change the pricing for the starter tier?"
 {"intent": "arithmetic_or_dates", "wants_latest": false, "wants_history": true, "sub_queries": ["starter tier pricing", "pricing change starter"], "entities": ["starter tier"], "dates": [], "ambiguous_person": null, "needs_followup": false, "answer_sketch": "We've changed the starter tier price twice: once in March to $12/mo, then again in July to $15/mo."}
 """
 
 ANCHOR_PROMPT_SUFFIX = """
-Two more keys for questions about relative time ("right after the planning meeting", "the day before the board
-meeting", "the day I fly"):
+Two more keys for questions about relative time ("right after the kickoff call", "the day before the conference", "the day I travel"):
 - "relation": one of [after, before, same_day, day_before, day_after, none]
-- "anchor_query": short keywords that identify the anchor EVENT ("planning meeting", "board meeting", "fly Denver"), "" if none
+- "anchor_query": short keywords that identify the anchor EVENT ("kickoff call", "conference", "travel Paris"), "" if none
 """
 
 

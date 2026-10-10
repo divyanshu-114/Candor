@@ -39,6 +39,7 @@ class Person:
 def _directory(store_id: int, n_units: int, store: MemoryStore) -> tuple[dict[str, Person], dict[str, set[str]]]:
     """(name -> Person, name -> ids of units the person wrote or is involved in)."""
     people: dict[str, Person] = {}
+    home_domains: set[str] = set()
     for u in store.units:
         names = u.meta.get("slack_user_names") or {}
         emails = u.meta.get("email_names") or {}
@@ -52,8 +53,9 @@ def _directory(store_id: int, n_units: int, store: MemoryStore) -> tuple[dict[st
                 p = people.setdefault(name, Person(name=name, first=first))
                 p.emails.add(email.lower())
                 m = _EMAIL_RE.match(email.lower())
-                if m and not m.group(1).startswith("brightline"):
+                if m and m.group(1) not in home_domains:
                     p.org_stems.add(m.group(1))
+            home_domains = {e.split("@")[1].split(".")[0] for e, n in emails.items() if n in names.values() and "@" in e}   # our own organisation
             for name in names.values():
                 if name and " " in name.strip():
                     people.setdefault(name, Person(name=name, first=name.split()[0].lower()))
