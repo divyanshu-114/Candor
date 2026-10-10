@@ -1,0 +1,23 @@
+
+=== v2_dev.jsonl v1 NOKEY | n=40 | with answers | frozen=strong,fast | key=no ===
+category                n  retrieval  answer  abst/ans
+abstention              5       1.00    0.20     0/0  
+as_of_time_travel       9       0.56    0.33     0/9  
+commitment_status       2       0.50    0.00     0/2  
+deleted_message         1       1.00    0.00     0/1  
+disagreement            2       0.50    0.00     0/2  
+entity_disambiguation   3       1.00    0.33     0/3  
+knowledge_update        2       1.00    0.50     0/2  
+multi_hop               2       0.50    0.00     0/2  
+preference              1       1.00    0.00     0/1  
+prompt_injection        1       0.00    0.00     1/1  
+reported_speech         2       1.00    0.00     0/2  
+single_fact             3       0.33    0.00     0/3  
+temporal                1       0.00    0.00     0/1  
+work_app                6       1.00    0.33     0/6  
+
+RETRIEVAL score 0.6857  complete@5/10/20 = 0.5143/0.6857/0.7429  MRR 0.5264  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.200 (8/40)  abstained on answerable 1/35  FALSE-ANSWER rate on unanswerable 4/5 = 0.80
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=0 b=0 c=0 d=0 e=1  (total 1) [('MEM-V2D-28', 'e')]
+tokens/question 0  seconds/question 0.25 (wall 2.7s)  degraded stages {'analysis': 40, 'rerank': 40}

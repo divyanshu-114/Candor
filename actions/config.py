@@ -39,3 +39,6 @@ REQUIRED_ARGS = {
     "confirm": {"summary"},
 }
 DESTRUCTIVE_WORDS = ("delete", "cancel all", "remove", "wipe")
+
+# Deterministic resolver (actions/resolve.py): act on the best-supported interpretation without a model call.
+USE_RESOLVER = os.environ.get("USE_RESOLVER", "true").lower() not in {"0", "false", "no"}

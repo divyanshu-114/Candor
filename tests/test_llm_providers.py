@@ -68,13 +68,13 @@ def test_tpm_429_then_success_same_provider(monkeypatch, tmp_path):
     fake_client.chat.completions.with_raw_response.create.side_effect = side_effect
     monkeypatch.setattr(p, "_client", fake_client)
 
-    started = time.monotonic()
+    slept: list[float] = []
+    monkeypatch.setattr(llm_mod.time, "sleep", lambda s: slept.append(s))  # patched clock: no real waiting
     result = chat_json("sys", "user", p.model_fast, cache_dir=str(tmp_path))
-    elapsed = time.monotonic() - started
 
     assert result == {"ok": True}
     assert call_count["n"] == 2
-    assert elapsed < 2.0, "a short TPM 429 must not block for long"
+    assert slept and max(slept) < 2.0, "a short TPM 429 must request only a short wait"
     assert "fast" not in p.exhausted_roles
 
 

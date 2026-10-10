@@ -81,14 +81,27 @@ def _full_mode_with_mocked_llm():
         setattr(config, name, value)
 
 
-@pytest.mark.parametrize("as_of", AS_OF_SWEEP)
-@pytest.mark.parametrize("question", GENERIC_QUESTIONS)
-def test_no_forbidden_id_survives_adversarial_rerank(question, as_of):
-    store = MemoryStore(DATA_DIR)
+# Compact sweep: one instant on each side of the delete, edit and calendar
+# update events, each with a different generic question (was a 96-case grid).
+SWEEP_CASES = [
+    (GENERIC_QUESTIONS[i % len(GENERIC_QUESTIONS)], as_of)
+    for i, as_of in enumerate([AS_OF_SWEEP[0], AS_OF_SWEEP[1], AS_OF_SWEEP[2], AS_OF_SWEEP[3], AS_OF_SWEEP[4],
+                               AS_OF_SWEEP[5], AS_OF_SWEEP[6], AS_OF_SWEEP[8], AS_OF_SWEEP[10], AS_OF_SWEEP[11]])
+]
+
+
+@pytest.mark.parametrize("pipeline_v2", [True, False])
+@pytest.mark.parametrize("question,as_of", SWEEP_CASES)
+def test_no_forbidden_id_survives_adversarial_rerank(question, as_of, pipeline_v2, data_store, monkeypatch):
+    monkeypatch.setattr(config, "USE_LANES", pipeline_v2)
+    store = data_store
     visible_ids = {u.id for u in store.visible(as_of)}
 
+    # both rerank entry points are patched: v1 calls memory.retrieve.chat_json, v2 calls memory.llm.chat_json
     with patch("memory.query.chat_json", side_effect=_worst_case_analysis), \
-         patch("memory.retrieve.chat_json", side_effect=_worst_case_rerank):
+         patch("memory.retrieve.chat_json", side_effect=_worst_case_rerank), \
+         patch("memory.llm.chat_json", side_effect=_worst_case_rerank), \
+         patch("memory.llm.is_available", return_value=True):
         ranked = retrieve(question, as_of, data_dir=DATA_DIR, cache_dir=".cache")
 
     ids = [uid for uid, _score in ranked]

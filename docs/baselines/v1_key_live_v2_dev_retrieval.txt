@@ -1,0 +1,27 @@
+Provider 'groq' rate-limited (retry 1/3) sleeping 2.0s: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01km2348vbfscr00c00qwrk4z7` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4969, Requested 3217. Please try again in 1.395s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+Provider 'groq' rate-limited (retry 1/3) sleeping 19.0s: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01km2348vbfscr00c00qwrk4z7` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7589, Requested 2924. Please try again in 18.8475s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+Provider 'groq' rate-limited (retry 1/3) sleeping 22.0s: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01km2348vbfscr00c00qwrk4z7` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7668, Requested 3259. Please try again in 21.9525s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+      analysis:   670.6 prompt +  189.7 completion =   860.3
+          hop2:  1084.3 prompt +   43.1 completion =  1127.4
+        rerank:  2551.5 prompt +  365.2 completion =  2916.8
+         TOTAL:  4904.5 tokens/question
+
+=== v2_dev.jsonl v1 KEY(live) | n=40 | retrieval-only | frozen=- | key=yes ===
+category                n  retrieval
+abstention              5       1.00
+as_of_time_travel       9       1.00
+commitment_status       2       0.50
+deleted_message         1       1.00
+disagreement            2       0.50
+entity_disambiguation   3       1.00
+knowledge_update        2       0.50
+multi_hop               2       1.00
+preference              1       1.00
+prompt_injection        1       0.00
+reported_speech         2       1.00
+single_fact             3       0.33
+temporal                1       1.00
+work_app                6       1.00
+
+RETRIEVAL score 0.8286  complete@5/10/20 = 0.6571/0.8286/0.8571  MRR 0.7281  forbidden@10 questions 0  forbidden@20 total 0
+tokens/question 4904  seconds/question 45.18 (wall 904.7s)  degraded stages none

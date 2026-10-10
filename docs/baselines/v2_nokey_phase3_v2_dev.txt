@@ -1,0 +1,31 @@
+
+==============================================================================
+DEGRADED STAGES (40 questions in this run)  -- results are valid but weaker than a full run
+==============================================================================
+  analysis    40/40 questions  query analysis fell back to heuristics (no key, quota exhausted, or an invalid reply)
+  rerank      40/40 questions  LLM rerank skipped; the local (BM25 + dense + cross-encoder) order was used
+  per-question detail: /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/v2_dev.diag.jsonl   (use --strict to fail the run on any degradation)
+==============================================================================
+
+=== v2_dev.jsonl v2 NOKEY | n=40 | with answers | frozen=strong,fast | key=no ===
+category                n  retrieval  answer  abst/ans
+abstention              5       1.00    0.20     0/0  
+as_of_time_travel       9       1.00    0.33     0/9  
+commitment_status       2       0.50    0.00     0/2  
+deleted_message         1       1.00    0.00     0/1  
+disagreement            2       0.50    0.00     0/2  
+entity_disambiguation   3       1.00    0.33     0/3  
+knowledge_update        2       1.00    0.50     0/2  
+multi_hop               2       1.00    0.00     0/2  
+preference              1       1.00    0.00     0/1  
+prompt_injection        1       0.00    0.00     1/1  
+reported_speech         2       1.00    0.00     0/2  
+single_fact             3       0.00    0.00     0/3  
+temporal                1       1.00    1.00     0/1  
+work_app                6       1.00    0.33     0/6  
+
+RETRIEVAL score 0.8286  complete@5/10/20 = 0.7714/0.8286/0.9143  MRR 0.6332  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.225 (9/40)  abstained on answerable 1/35  FALSE-ANSWER rate on unanswerable 4/5 = 0.80
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=0 b=0 c=0 d=0 e=1  (total 1) [('MEM-V2D-28', 'e')]
+tokens/question 0  seconds/question 0.45 (wall 4.8s)  degraded stages {'analysis': 40, 'rerank': 40}

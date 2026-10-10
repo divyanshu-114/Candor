@@ -2135,3 +2135,85 @@ date-resolver for "the day I fly" questions (changes analysis/rerank prompts; wo
 **Totals (ledger, this run):** gpt-oss-20b 141,299 tokens (69 calls) + ~15-25k unledgered judge calls;
 gpt-oss-120b 109,339 (47 calls); 250,638 ledgered, ~266-276k including the judge. Remaining of the 300k total:
 ~24-34k; 20b ~4-14k of 170k; 120b ~60.7k.
+
+---
+
+# v2 (branch `v2`)
+
+## Phase 1 — fast tests (0 tokens)
+Before: 363 tests, 20.7 s on the first run (one test 10.4 s: it paid the one-time dense-model load), 10.5 s warm.
+Findings: the suite was never really slow once warm; the cost was (a) a 96-case adversarial sweep, (b) a real 1 s wait in a TPM-retry test,
+(c) a visibility test that looped 20 as_of values, (d) `test_visible.py` had no assertions at all (it only printed).
+Changes: autouse guard that raises on any non-loopback connect or DNS lookup (+2 tests proving it); session-scoped `data_store` fixture;
+sweep merged into 10 parametrized cases; visibility loop 20 -> 6; TPM test patches the clock and asserts the requested wait;
+`test_visible` now asserts (ours differs from the official harness only by SL-EV event ids); 10 process/CLI/real-data tests marked `slow`,
+excluded by default via `pytest.ini` (`pytest -m slow` runs them). `release_check.sh` now runs the fast suite and the slow suite and prints both times.
+After: 269 fast tests in 3.4 s + 10 slow in 1.1 s.
+Not done on purpose: no more test deletion; the remaining tests each guard a rule or a component contract.
+
+## Phase 2 — evaluation sets and diagnostics
+
+**Sets.** `evals/v2_dev.jsonl` (40) and `evals/v2_holdout.jsonl` (25), written after reading the whole corpus, holdout first
+(details and the verification method in `docs/dev_set_notes.md`; `scripts/verify_eval_set.py` re-derives every id, visibility
+and key term from the official harness loader; 0 problems). 11 unanswerable questions in total (5 + 6), 1 planted instruction in
+each file, 3 same-question-at-3-times trios, 2 deleted-message pairs.
+
+**Tools.** `scripts/eval_report.py` (one command: run + per-category retrieval and answer scores, abstentions, false-answer rate,
+tokens and seconds per question, and the abstention diagnostic a/b/c/d/e; refuses to print per-question detail for any file named
+*holdout*), `scripts/ablate.py` (flag sets -> markdown table; refuses the holdout), `scripts/show_misses.py` (tuning aid; refuses the
+holdout), `memory/quotes.py` (the soft quote matcher, tested), `memory/diagnostics.py` now records evidence ids, writer verdict and abstain reason.
+
+**v1 baselines** (retrieval = official score, all needed groups in top 10 and nothing forbidden; answers = rule scorer, strict):
+
+| set | no key: retrieval | no key: answers (false-answer rate) | with key |
+|---|---|---|---|
+| train (27) | 64.0% | 25.9% (0/2) | replay today 76.0% / 59.3% answers, **11 of 27 questions degraded (cache incomplete)**; 80.0% / 74.1% when measured live on 10-03 |
+| dev (24) | 57.9% | 20.8% (3/5) | not measured (12-question subset replay: 50.0% / 25.0%, 12/12 degraded: not in cache) |
+| v2_dev (40) | 68.6% | 20.0% (4/5) | **live today, retrieval-only: 82.9%**, MRR 0.728, 0 forbidden; 4,905 tokens/question (analysis 860 + hop2 1,127 + rerank 2,917); ledger: 116,671 tokens on gpt-oss-120b + 79,508 on gpt-oss-20b, 905 s |
+| v2_holdout (25) | 75.0% | 20.0% (6/6) | deferred to the end of Phase 3 (est. 4.9k tokens/question = 122k) |
+
+Findings: (1) the v1 LLM cache covers only the first ~16 train questions under the current prompts, so "replay" numbers are not
+a clean baseline; (2) with no key the extractive answer is given for almost every unanswerable question (false-answer 80-100%): the
+coverage gate only fires when words are missing from memory, never when all words exist in different records. Phase 4 targets this;
+(3) hop2 costs 1,127 tokens/question in v1 and was not shown to help; v2 drops it. Abstention diagnostic on the only with-key abstention
+we can replay (train): 1 case, class c (a correct answer whose quote dropped "let's").
+
+## Phase 3 — retrieval v2 (numbers; flags in memory/config.py, PIPELINE=v1 restores v1)
+
+No-key, retrieval score (all needed groups in top 10, nothing forbidden), final default config vs v1:
+
+| set | v1 no key | v2 no key | c@5/10/20 (v2) | MRR v1 -> v2 |
+|---|---|---|---|---|
+| train (27) | 64.0% | **92.0%** | .72/.92/.92 | .567 -> .697 |
+| dev (24) | 57.9% | **78.9%** | .68/.79/.89 | .397 -> .498 |
+| v2_dev (40) | 68.6% | **82.9%** | .77/.83/.91 | .526 -> .633 |
+| v2_holdout (25, aggregate only) | 75.0% | **75.0%** | .68/.74/.79 | .560 -> .792 |
+
+The holdout did NOT improve at the primary score (MRR did; c@20 fell from .84 to .79; temporal and broad questions still fail). Train/dev gains are
+partly tuning gains (CE weight, ledger, neighbours were chosen on them). Treat the holdout row as the honest generalisation estimate.
+
+With key (live): v1 on v2_dev 82.9% (4,905 tokens/q). v2 on a 20-question half of v2_dev (every other question): **94.1%** vs v1 82.4% and v2 no-key 88.2% on the
+same half, 4,314 tokens/q; BUT the run hit the gpt-oss-120b daily limit part-way (ledger 183k tokens): 4 questions had `llm_unavailable`, 2 reranks and
+3 analyses degraded, so this number is a lower-quality mix. Live runs stopped there (daily quota, model gpt-oss-120b; gpt-oss-20b at 134k).
+
+Ablations (no key, train / v2_dev, on top of lanes + cross-encoder): lanes alone 0.60/0.66 (worse than v1: lane-balanced RRF scrambles the top 10);
++MiniLM-L6 cross-encoder 0.88/0.77; +ledger 0.92/0.80 (kept); +neighbours as tail (c@20 +.03, kept); anchor, chains, people: no change (kept on, harmless;
+people extras off); first versions of chains/anchor/people as guaranteed slots HURT (MRR -0.1) until rewritten as score bonuses. Embedding models (hybrid,
+fewer = worse): bge-small .646 c@10, bge-base .696, gte-base .722 (kept: +0.37 GB, 252 s warm-up here). Rerankers: L-12 and jina-turbo no better than L-6.
+Masking fix: "SSO is on our Q4 roadmap" and Codex `key=` lines were being redacted; precise masking keeps real credentials masked (tests).
+Did not work: no-key evidence gates (co-occurrence, cross-encoder score): false answers 7/12 -> 5/12 at the price of 4-8 wrongly abstained answerable questions, no net gain; left off (NO_KEY_GATE).
+
+## Phase 4/5/6 status
+Phase 4: writer v2 (soft quotes, partial answers, version-chain hint, arithmetic in code) is implemented and unit-tested but OFF (WRITER_V2) because it has not been measured
+with a key (quota). Phase 5 done: actions with key train 12/12, dev 30/30 (v1 27/30), new 15/15 (v1 9/15); no key 12/12, 30/30, 14/15 (v1 4/12, 13/30, 2/15).
+Phase 6 done: banner, --strict, provider quirks, provider_check (groq 5/5, openrouter free models 5/5), fake strict server test.
+
+## 2026-10-10 — continuation (OpenRouter path, audit, fresh holdouts)
+- Provider auto-detection (any key variable -> enabled in order openai, openrouter, custom, anthropic, groq, gemini; models discovered through GET /models by a documented preference list; 402/insufficient credit fails over loudly). OpenRouter `openai/gpt-oss-120b` ($0.037/$0.17 per M) + `gpt-oss-20b` ($0.018/$0.09) passed provider_check 5/5 with credit.
+- Overfit audit: see docs/OVERFIT_AUDIT.md. Removed hard-coded org domain (2 places), `nrr/arr/mrr`, `walkthrough`, `pushed the demo`, train/data names in prompts; leakage test now also checks data-derived names and six-word runs. No-key actions 55/57 after the audit.
+- Fresh holdouts written and frozen: evals/v2_holdout2.jsonl (25), evals/actions_holdout2.jsonl (20).
+- Writer v2 live A/B (OpenRouter, retrieval replayed from cache): OFF train 81.5 / v2_dev 65.0 / holdout 48.0; first ON 74.1 / 70.0 / 56.0; the 4 new train abstentions were (i) the model marking yes/no-conditional questions "not answerable" despite a quote, (ii) a quote copied from the neighbouring segment, (iii) unicode non-breaking hyphens in ids, (iv) hyphenated token "US-only" mis-handled by the exact-name rule, (v) quote cited under the wrong id. Fixed generally (prompt wording; context text counts as quote material; unicode clean-up; attribute a quote to the shown record that contains it). Final ON: 77.8 / 67.5 / 56.0, false answers unchanged (0/5 dev), v2_dev abstentions 7 -> 3: rule satisfied, WRITER_V2 on. Train is 1 question lower than OFF.
+- No-key cross-encoder gate (one global threshold): tuning sets 60 answerable / 7 unanswerable: zero-refusal threshold catches 1/7; holdout 0/6. Off. v1 coverage gate still abstains on both train unanswerable questions.
+- Weak categories (v2_dev): broad commitment questions. Ledger fixes (2-letter acronyms like "JD", meeting-title weighting, limit 10) are neutral on every set; bonus 0.02/0.035 lowered train. Kept neutral changes, no bonus change. Temporal has no dev failures; temporal failures exist only on v2_holdout (not inspected).
+- Fresh-clone first run: 387 s, 0.73 GB (venv 224 MB, models 504 MB), reproduces 92.0% no-key on train. Cold-cache 27 questions: 10,537 tokens/question (analysis 917, rerank 3,821, writer 5,798). Ledger ingest: 0 tokens (rules); optional LLM pass ~17k.
+- Final fresh-set results (single run each): memory v2_holdout2 no key 84.2% retrieval / 8% answers / 6 of 6 unanswerable answered; with key 84.2% / 64% / 1 of 6; v1 no key 63.2%. actions_holdout2: no key 18/20, with key 16/20.

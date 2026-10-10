@@ -1,0 +1,27 @@
+
+=== memory_train.jsonl v1 NOKEY | n=27 | with answers | frozen=strong,fast | key=no ===
+category                n  retrieval  answer  abst/ans
+abstention              2       1.00    1.00     0/0  
+as_of_time_travel       2       0.50    0.50     0/2  
+commitment_status       3       0.67    0.00     0/3  
+conditional             1       1.00    0.00     0/1  
+correction              1       1.00    0.00     0/1  
+cross_source            1       0.00    0.00     0/1  
+disagreement            1       1.00    0.00     0/1  
+edited_record           1       1.00    1.00     0/1  
+entity_disambiguation   1       1.00    1.00     0/1  
+knowledge_update        2       0.50    0.00     0/2  
+multi_hop               1       1.00    0.00     0/1  
+ownership               2       1.00    0.00     0/2  
+preference              1       1.00    1.00     0/1  
+prompt_injection        1       0.00    0.00     0/1  
+reported_speech         1       1.00    0.00     0/1  
+single_fact             3       0.33    0.33     0/3  
+temporal                2       0.00    0.00     0/2  
+work_app                1       1.00    0.00     0/1  
+
+RETRIEVAL score 0.64  complete@5/10/20 = 0.6/0.64/0.72  MRR 0.5669  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.259 (7/27)  abstained on answerable 0/25  FALSE-ANSWER rate on unanswerable 0/2 = 0.00
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=0 b=0 c=0 d=0 e=0  (total 0) []
+tokens/question 0  seconds/question 0.32 (wall 2.4s)  degraded stages {'analysis': 27, 'rerank': 27}

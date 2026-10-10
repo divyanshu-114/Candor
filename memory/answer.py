@@ -15,8 +15,10 @@ from datetime import datetime
 from memory import config
 from memory import diagnostics
 from memory import llm as llm_module
+from memory import arith
 from memory.coverage import should_abstain as _coverage_says_abstain
 from memory.llm import chat_json
+from memory.quotes import clean_unicode, soft_quote_match
 from memory.retrieve import retrieve, _resources
 from memory.safety import mask_secrets, INJECTION_PATTERNS
 from memory.store import MemoryStore
@@ -254,7 +256,9 @@ def build_evidence_package(retrieved_ids: list[str], question: str, as_of: str,
         u = visible_units[uid]
         max_words = config.EVIDENCE_TOP_N_WORDS if rank < config.EVIDENCE_TOP_N else config.EVIDENCE_REST_WORDS
         text = _trim_for_unit(u, question, max_words)
-        extra_context = " ".join(_meeting_context_lines(u, store, as_of)) if u.source == "meeting" else ""
+        context_lines = _meeting_context_lines(u, store, as_of) if u.source == "meeting" else []
+        extra_context = " ".join(context_lines)
+        extra_context_text = re.sub(r"<[^>]+>", " ", extra_context).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
         block = (
             f'<record id="{u.id}" source="{u.source}" time="{u.time.isoformat()}" '
             f'speaker="{_xml_escape(_speaker_label(u))}" speaker_known="{str(bool(u.speaker_known)).lower()}" '
@@ -266,7 +270,9 @@ def build_evidence_package(retrieved_ids: list[str], question: str, as_of: str,
         if blocks_by_id and projected // 4 > config.EVIDENCE_TOKENS:
             break
         blocks_by_id[uid] = block
-        display_text_by_id[uid] = text
+        # What the writer could read next to this record (the neighbouring meeting segments) is also valid quote material: a
+        # quote copied from the segment right after the cited one is a mis-cited id, not an invented fact.
+        display_text_by_id[uid] = (text + " " + extra_context_text) if (config.WRITER_V2 and extra_context_text) else text
         total_chars = projected
 
     chosen = sorted(blocks_by_id.keys(), key=lambda uid: visible_units[uid].time)
@@ -301,8 +307,8 @@ name with their stated reason; do not pick a winner.
 
 WHO SAID WHAT / REPORTED SPEECH: attribute claims to the person who said them. When the records
 contain BOTH a person's report of what another person said or wanted AND that other person's own
-statement, give three parts in this order: (1) who reported what, labelled second-hand (e.g. "Dana
-said that John told her ..."); (2) the person's own statement, first-hand (e.g. "John himself wrote
+statement, give three parts in this order: (1) who reported what, labelled second-hand (e.g. "Pat
+said that Lee told her ..."); (2) the person's own statement, first-hand (e.g. "Lee himself wrote
 ...") ; (3) the final decision, if any record states one. Never attribute a statement to a record
 whose speaker_known is "false" -- call them "an unidentified speaker". Never merge different people
 who share a first name; always use full names.
@@ -335,17 +341,50 @@ answer to a short reason, used_ids to [], and support to [].
 """
 
 
+def _build_writer_system_v2() -> str:
+    """v1 prompt with four targeted additions (versions, partial answers, computed arithmetic, new JSON shape).
+    Built from the v1 text so the shared rules cannot drift."""
+    head = WRITER_SYSTEM.split("Return ONLY JSON")[0]
+    head = head.replace(
+        "DISAGREEMENT (two people",
+        "VERSIONS: when the user message has a <chain> hint, those records are successive versions of ONE fact, oldest first. "
+        "Answer with the LATEST version visible at as_of and mention an earlier value only as history (\"moved from X\").\n\n"
+        "DISAGREEMENT (two people", 1)
+    tail = f"""ARITHMETIC: never count or subtract dates yourself. Put the two ISO dates in "compute" and write {arith.PLACEHOLDER}
+where the number belongs, e.g. "compute": {{"op": "days_between", "a": "2026-09-10", "b": "2026-09-16"}}.
+
+PARTIAL ANSWERS: "answerable" is true when the records state the fact asked; "partial" when they state the MAIN fact but not
+a secondary detail the question also asked for (answer what is supported, then one short sentence saying what is missing, and
+fill "missing"); false ONLY when no record states the fact asked, even if related records exist (a person, company or event being
+mentioned is not the same as the asked name, price, outcome or number being stated). A yes/no or "is it decided" question IS
+answered by a record that gives the current state, the condition or the refusal ("not yet, it is tied to X"): answer it, do not
+mark it false. If you have a supporting quote the answer is true or partial; false always comes with an empty support list.
+
+Return ONLY JSON: {{"answerable": true|"partial"|false, "answer": "...", "missing": "", "compute": null,
+"used_ids": ["id", ...], "support": [{{"id": "<record id>", "quote": "<=15 words copied from that record's text"}}]}}.
+Every claim in the answer must be backed by a support quote copied from the evidence (not paraphrased); never leave "support"
+empty when answerable is true or "partial". If answerable is false: short reason in "answer", used_ids [], support [].
+"""
+    return head + tail
+
+
+WRITER_SYSTEM_V2 = _build_writer_system_v2()
+
+
 def _writer_model():
     """The model for the writer role (config.WRITER_ROLE), following that
     role's provider chain."""
     return llm_module.get_model_strong() if config.WRITER_ROLE == "strong" else llm_module.get_model_fast()
 
 
-def _run_writer(evidence: str, question: str, as_of: str, intent: str) -> dict | None:
+def _run_writer(evidence: str, question: str, as_of: str, intent: str, chain_ids: list[str] | None = None) -> dict | None:
     checklist = INTENT_CHECKLISTS.get(intent, INTENT_CHECKLISTS["other"])
+    v2 = config.WRITER_V2
     user = (f"{evidence}\n\nToday (as_of): {as_of}\nQuestion intent: {intent} "
             f"(checklist: {checklist})\nQuestion: {question}")
-    res = chat_json(WRITER_SYSTEM, user, _writer_model(),
+    if v2 and chain_ids:
+        user = f"{evidence}\n<chain>{' -> '.join(chain_ids)}</chain>\n\n" + user.split("\n\n", 1)[1]
+    res = chat_json(WRITER_SYSTEM_V2 if v2 else WRITER_SYSTEM, user, _writer_model(),
                      max_tokens=config.MAX_TOKENS_WRITER, reasoning_effort=config.REASONING_EFFORT_WRITER,
                      stage="writer")
     if not res:
@@ -354,8 +393,13 @@ def _run_writer(evidence: str, question: str, as_of: str, intent: str) -> dict |
     for item in (res.get("support") or []):
         if isinstance(item, dict) and item.get("id") and item.get("quote"):
             support.append({"id": str(item["id"]), "quote": str(item["quote"])})
+    raw = res.get("answerable", False)
+    partial = v2 and (str(raw).lower() == "partial")
     return {
-        "answerable": bool(res.get("answerable", False)),
+        "answerable": bool(raw) and str(raw).lower() != "false",
+        "partial": partial,
+        "missing": str(res.get("missing", "") or ""),
+        "compute": res.get("compute") if v2 else None,
         "answer": str(res.get("answer", "")),
         "used_ids": [str(x) for x in (res.get("used_ids") or [])],
         "support": support,
@@ -385,20 +429,31 @@ def _absence_unsupported(answer: str, support: list[dict], verified_ids: list[st
 
 
 def _verify_support(support: list[dict], display_text_by_id: dict[str, str]) -> list[str]:
-    """Return the ids whose support quote actually occurs (normalized,
-    case/punctuation/whitespace-insensitive) in that record's displayed
-    evidence text. This -- not the model's own "answerable" claim -- is the
-    real abstention gate.
+    """Return the ids whose support quote actually occurs in that record's displayed evidence text. This -- not the
+    model's own "answerable" claim -- is the real abstention gate.
+
+    v1: normalised verbatim substring. v2 (config.WRITER_V2): >= QUOTE_SOFT_THRESHOLD of the quote's content words in
+    order, and every number / date / amount / capitalised name in the quote present EXACTLY (memory/quotes.py), so a
+    dropped filler word no longer turns a correct answer into "I don't know" while a changed figure still fails.
     """
     verified = []
     for item in support:
         uid, quote = item["id"], item["quote"]
+        if config.WRITER_V2:
+            uid, quote = clean_unicode(uid).strip(), clean_unicode(quote)
+            # the cited id first; if the quote is really in ANOTHER record the writer was shown (a mis-cited id), attribute it there
+            for cand in [uid] + [i for i in display_text_by_id if i != uid]:
+                text = display_text_by_id.get(cand)
+                if text and soft_quote_match(quote, clean_unicode(text), config.QUOTE_SOFT_THRESHOLD):
+                    verified.append(cand)
+                    break
+            continue
         record_text = display_text_by_id.get(uid)
         if not record_text:
             continue
-        if _normalize_for_match(quote) and _normalize_for_match(quote) in _normalize_for_match(record_text):
+        if bool(_normalize_for_match(quote)) and _normalize_for_match(quote) in _normalize_for_match(record_text):
             verified.append(uid)
-    return verified
+    return list(dict.fromkeys(verified))
 
 
 # ---------------------------------------------------------------------------
@@ -473,6 +528,7 @@ def _finalize_sources(verified_ids: list[str], evidence_ids: list[str], visible_
 def _abstain_row(qid: str, retrieved_ids: list[str], reason_for_log: str = "") -> dict:
     if reason_for_log:
         LOG.info("Abstaining for question id=%s: %s", qid, reason_for_log)
+    diagnostics.set_detail("abstain_reason", reason_for_log or "unspecified")
     return {
         "id": qid,
         "answer": ABSTAIN_ANSWER,
@@ -558,10 +614,16 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
     visible_ids = {u.id for u in store.visible(as_of)}
     as_of_dt = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
 
-    if not llm_module.GROQ_API_KEY:
+    if not llm_module.is_available():
         extractive = _extractive_answer(retrieved_ids, question, as_of, store)
         if not extractive:
             return _abstain_row(qid, retrieved_ids, "no records retrieved, or the coverage gate found the question's terms absent from memory")
+        if config.NO_KEY_GATE != "v1":
+            from memory.coverage import evidence_gate
+            abstain, signals = evidence_gate(question, store.visible(as_of), retrieved_ids, meta.get("ce_scores"))
+            diagnostics.set_detail("gate", signals)
+            if abstain:
+                return _abstain_row(qid, retrieved_ids, f"no-key evidence gate: the question's words do not meet in one record ({signals})")
         top_score = index.bm25(question, visible_ids, 1)
         top_score_val = top_score[0][1] if top_score else 0.0
         if top_score_val < config.NO_KEY_ABSTAIN_BM25_MIN:
@@ -582,7 +644,9 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         retrieved_ids, question, as_of, store, return_display=True)
 
     intent = meta.get("analysis", {}).get("intent", "other")
-    written = _run_writer(evidence, question, as_of, intent)
+    diagnostics.set_detail("evidence_ids", evidence_ids)
+    chain_ids = [i for i in (meta.get("chain") or []) if i in evidence_ids]
+    written = _run_writer(evidence, question, as_of, intent, chain_ids if len(chain_ids) > 1 else None)
     if written is None:
         diagnostics.mark_degraded("writer")
         extractive = _extractive_answer(retrieved_ids, question, as_of, store)
@@ -594,18 +658,20 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
         }
 
     verified_ids = _verify_support(written["support"], display_text_by_id)
+    diagnostics.set_detail("writer", {"answerable": written["answerable"], "support": written["support"],
+                                       "verified": verified_ids})
     if not written["answerable"] or not verified_ids:
         return _abstain_row(qid, retrieved_ids,
                              f"answerable={written['answerable']}, support quotes verified={len(verified_ids)}")
 
-    scrubbed = _scrub_answer(written["answer"])
+    scrubbed = _scrub_answer(arith.apply(written["answer"], written.get("compute")))
     final_support = written["support"]
 
     if _contains_future_date(scrubbed, as_of_dt):
         LOG.warning("Writer mentioned a date after as_of for question id=%s; re-asking once", qid)
         retry_user = (f"{evidence}\n\nToday (as_of): {as_of}\nQuestion intent: {intent}\nQuestion: {question}\n\n"
                       "IMPORTANT: do not mention dates after as_of.")
-        retry = chat_json(WRITER_SYSTEM, retry_user, _writer_model(),
+        retry = chat_json(WRITER_SYSTEM_V2 if config.WRITER_V2 else WRITER_SYSTEM, retry_user, _writer_model(),
                            max_tokens=config.MAX_TOKENS_WRITER, reasoning_effort=config.REASONING_EFFORT_WRITER,
                            stage="writer")
         if retry and retry.get("answer"):

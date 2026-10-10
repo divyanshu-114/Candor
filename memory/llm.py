@@ -63,6 +63,7 @@ class Provider:
     exhausted_roles: set[str] = field(default_factory=set)
     exhausted_logged_roles: set[str] = field(default_factory=set)
     unsupported_params: set[str] = field(default_factory=set)
+    auto_models: bool = False   # model ids are discovered lazily from GET /models (documented preference list)
     _client: OpenAI | None = field(default=None, init=False, repr=False)
 
     @property
@@ -72,6 +73,8 @@ class Provider:
         return self._client
 
     def model_for(self, role: str) -> str:
+        if self.auto_models and not (self.model_strong and self.model_fast):
+            _discover_models(self)
         return self.model_strong if role == "strong" else self.model_fast
 
     def chain(self, role: str) -> list[str]:
@@ -115,10 +118,81 @@ def _build_role_order() -> dict[str, list[str] | None]:
     return {"strong": _env_names("LLM_PROVIDERS_STRONG"), "fast": _env_names("LLM_PROVIDERS_FAST")}
 
 
+# Providers recognised from their API-key variable, in the order they are enabled when LLM_PROVIDERS is not set.
+# name -> default base URL ("" = must come from <NAME>_BASE_URL). All speak the OpenAI chat-completions protocol.
+KNOWN_PROVIDERS: dict[str, str] = {
+    "openai": "https://api.openai.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "custom": "",
+    "anthropic": "https://api.anthropic.com/v1/",
+    "groq": "https://api.groq.com/openai/v1",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
+}
+
+
+def _detect_provider_names() -> list[str]:
+    """Every known provider whose API key variable is set, in KNOWN_PROVIDERS order (used when LLM_PROVIDERS is unset)."""
+    return [n for n in KNOWN_PROVIDERS if (os.environ.get(f"{n.upper()}_API_KEY") or (n == "groq" and GROQ_API_KEY))]
+
+
+def pick_models(model_ids: list[str]) -> tuple[str, str]:
+    """(strong, fast) chosen from a provider's model list by the documented preference lists in config.py: the first
+    preference substring that matches a chat-capable id wins; otherwise the first chat-capable id (strong) / last (fast)."""
+    chat = [m for m in model_ids if not any(x in m.lower() for x in config.NON_CHAT_MARKERS)]
+    def choose(prefs: list[str]) -> str | None:
+        for pref in prefs:
+            hits = [m for m in chat if pref in m.lower()]
+            if hits:
+                return min(hits, key=lambda m: (len(m), m))     # "gpt-4o" before "gpt-4o-mini-2024-..."
+        return None
+    strong = choose(config.AUTO_PREFERENCE_STRONG) or (chat[0] if chat else "")
+    fast = choose(config.AUTO_PREFERENCE_FAST) or (chat[-1] if chat else "")
+    return strong, fast or strong
+
+
+def _discover_models(p: "Provider") -> None:
+    with _MODEL_RESOLVE_LOCK:
+        if p.model_strong and p.model_fast:
+            return
+        try:
+            ids = [m.id for m in p.client.models.list().data]
+        except Exception as e:
+            LOG.error("Provider %r has a key but its model list could not be fetched (%s); set %s_MODEL_STRONG / _FAST. "
+                      "Disabling it for this process.", p.name, e, p.name.upper())
+            p.exhausted_roles.update({"strong", "fast"})
+            p.model_strong = p.model_strong or "unknown"
+            p.model_fast = p.model_fast or "unknown"
+            return
+        strong, fast = pick_models(ids)
+        p.model_strong, p.model_fast = p.model_strong or strong, p.model_fast or fast
+        if not (p.model_strong and p.model_fast):
+            LOG.error("Provider %r offers no chat model I can use.", p.name)
+            p.exhausted_roles.update({"strong", "fast"})
+            return
+        LOG.warning("Provider %r: models chosen automatically: strong=%s fast=%s (override with %s_MODEL_STRONG / _FAST)",
+                    p.name, p.model_strong, p.model_fast, p.name.upper())
+
+
+def describe_providers() -> str:
+    """One human line per enabled provider, or the loud no-key banner. Printed at the start of every run."""
+    live = [p for p in _PROVIDERS if p.api_key and _provider_is_live(p)]
+    if not live:
+        bar = "=" * 78
+        return (f"{bar}\nNO LLM PROVIDER ENABLED (no key mode): query analysis, LLM rerank, the answer writer and the action planner\n"
+                f"are skipped; retrieval, extractive answers and rule-based actions still run. To enable: set one of\n"
+                f"OPENAI_API_KEY, OPENROUTER_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY (or CUSTOM_* ) in .env.\n{bar}")
+    lines = ["LLM providers (in failover order):"]
+    for p in live:
+        mode = "auto-detect on first use" if p.auto_models and not (p.model_strong and p.model_fast) else f"strong={p.model_strong} fast={p.model_fast}"
+        lines.append(f"  - {p.name}: {mode}")
+    return "\n".join(lines)
+
+
 def _build_providers() -> list[Provider]:
     names: list[str] = []
-    for group in (_env_names("LLM_PROVIDERS") or ["groq"], _env_names("LLM_PROVIDERS_STRONG") or [],
-                  _env_names("LLM_PROVIDERS_FAST") or []):
+    configured = _env_names("LLM_PROVIDERS")
+    for group in (configured if configured is not None else (_detect_provider_names() or ["groq"]),
+                  _env_names("LLM_PROVIDERS_STRONG") or [], _env_names("LLM_PROVIDERS_FAST") or []):
         for n in group:
             if n not in names:
                 names.append(n)
@@ -133,18 +207,17 @@ def _build_providers() -> list[Provider]:
             model_fast = os.environ.get(f"{upper}_MODEL_FAST") or LLM_MODEL_FAST
         else:
             api_key = os.environ.get(f"{upper}_API_KEY")
-            base_url = os.environ.get(f"{upper}_BASE_URL", "")
-            if name == "openai" and not base_url:
-                base_url = "https://api.openai.com/v1"
+            base_url = os.environ.get(f"{upper}_BASE_URL", "") or KNOWN_PROVIDERS.get(name, "")
             model_strong = os.environ.get(f"{upper}_MODEL_STRONG", "")
             model_fast = os.environ.get(f"{upper}_MODEL_FAST", "")
             # An OpenAI-compatible endpoint with a single model id serves both roles.
             model_strong, model_fast = model_strong or model_fast, model_fast or model_strong
         if not api_key:
             continue  # provider without a key is skipped
-        if not base_url or not (model_strong and model_fast):
-            LOG.warning("Provider %r has a key but no base URL / model ids; skipping it.", name)
+        if not base_url:
+            LOG.warning("Provider %r has a key but no base URL (set %s_BASE_URL); skipping it.", name, upper)
             continue
+        auto = not (model_strong and model_fast)   # key and URL but no model ids: discover through GET /models on first use
         def _fallbacks(role_var: str, default: list[str]) -> list[str]:
             raw = os.environ.get(f"{upper}_MODEL_{role_var}_FALLBACKS")
             return default if raw is None else [m.strip() for m in raw.split(",") if m.strip()]
@@ -154,7 +227,7 @@ def _build_providers() -> list[Provider]:
         groq = name == "groq"
         providers.append(Provider(name=name, api_key=api_key, base_url=base_url,
                                    model_strong=model_strong, model_fast=model_fast,
-                                   model_premium=os.environ.get(f"{upper}_MODEL_PREMIUM", ""),
+                                   model_premium=os.environ.get(f"{upper}_MODEL_PREMIUM", ""), auto_models=auto,
                                    fallbacks_fast=_fallbacks("FAST", [model_strong] if groq else []),
                                    fallbacks_strong=_fallbacks("STRONG", [model_fast] if groq else [])))
     return providers
@@ -163,6 +236,12 @@ def _build_providers() -> list[Provider]:
 _PROVIDERS: list[Provider] = _build_providers()
 _ROLE_ORDER: dict[str, list[str] | None] = _build_role_order()
 _ALL_EXHAUSTED_LOGGED: set[str] = set()  # role names already logged as "all providers exhausted"
+
+
+def is_available() -> bool:
+    """True when at least one configured provider has a key and has not been taken out for the process."""
+    # GROQ_API_KEY is the legacy, patchable "a key exists" signal (existing tests and callers rely on it)
+    return any(p.api_key and _provider_is_live(p) for p in _PROVIDERS) or bool(GROQ_API_KEY)
 
 
 def reload_providers() -> None:
@@ -338,6 +417,11 @@ def _names_response_format(exc: Exception) -> bool:
     return any(t in message for t in ("response_format", "json_object", "json mode", "json_schema"))
 
 
+def _names_param(exc: Exception, name: str) -> bool:
+    """Does the provider's error message name this request parameter ("Unsupported parameter: 'max_tokens'", ...)?"""
+    return name in str(exc).lower()
+
+
 def _is_failed_generation(exc: Exception) -> bool:
     """Groq's 400 for output that didn't close as valid JSON (usually a
     reasoning model that ran out of max_tokens). It says nothing about which
@@ -448,7 +532,9 @@ _TOKEN_BUDGETS_LOCK = threading.Lock()
 def _budget_for(provider: Provider) -> _TokenBudget:
     with _TOKEN_BUDGETS_LOCK:
         if provider.name not in _TOKEN_BUDGETS:
-            _TOKEN_BUDGETS[provider.name] = _TokenBudget(config.LLM_TPM)
+            # Groq's free tier really is ~8k tokens/minute; paid services are not throttled below 600k unless <NAME>_TPM says so
+            tpm = config.LLM_TPM if provider.name == "groq" else int(os.environ.get(f"{provider.name.upper()}_TPM", "600000"))
+            _TOKEN_BUDGETS[provider.name] = _TokenBudget(tpm)
         return _TOKEN_BUDGETS[provider.name]
 
 
@@ -456,6 +542,7 @@ def _estimate_tokens(system: str, user: str, max_tokens: int) -> int:
     return (len(system) + len(user)) // 4 + max_tokens
 
 
+MAX_TOKENS_CEILING = 4096  # a truncated reasoning reply is retried with a larger budget, never above this
 MAX_SINGLE_WAIT_S = 60.0  # never sleep longer than this for any single wait
 
 
@@ -492,7 +579,7 @@ class _RateLimiter:
             time.sleep(max(sleep_for, 0.01))
 
 
-_RATE_LIMITER = _RateLimiter(config.LLM_MAX_RPM)
+_RATE_LIMITER = _RateLimiter(config.LLM_MAX_RPM if ('LLM_MAX_RPM' in os.environ or all(p.name == 'groq' for p in _PROVIDERS)) else 300)
 
 # Thread-safe running total of tokens spent this process, for outputs/run_stats.json.
 _USAGE_LOCK = threading.Lock()
@@ -555,24 +642,30 @@ def _record_rate_limit_hit() -> None:
         _USAGE["rate_limit_hits"] += 1
 
 
+_THINK_RE = re.compile(r"<(think|thinking|reasoning)>.*?</\1>", re.S | re.I)
+_FENCE_RE = re.compile(r"```(?:json|JSON)?\s*(.*?)```", re.S)
+
+
 def _extract_json(text: str) -> dict[str, Any]:
-    """Robust JSON extraction from LLM output (strips code fences, finds first {...})."""
-    text = text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?", "", text)
-        text = re.sub(r"```$", "", text)
-        text = text.strip()
+    """Robust JSON extraction from LLM output.
 
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end >= start:
-        text = text[start:end + 1]
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as e:
-        LOG.warning("Failed to decode JSON: %s\nText was: %s", e, text)
-        return {}
+    Handles the habits seen across providers: <think>...</think> blocks before the answer, markdown code fences
+    (anywhere, not only at the start), prose before/after the object, and braces inside that prose. Tries every
+    '{' as the start of a JSON value and returns the first object that parses; {} (logged) when none does."""
+    text = _THINK_RE.sub(" ", text or "").strip()
+    fenced = _FENCE_RE.findall(text)
+    candidates = [f.strip() for f in fenced if "{" in f] + [text]
+    decoder = json.JSONDecoder()
+    for cand in candidates:
+        for m in re.finditer(r"\{", cand):
+            try:
+                value, _end = decoder.raw_decode(cand[m.start():])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict):
+                return value
+    LOG.warning("Failed to decode JSON from a model reply (%d chars)", len(text))
+    return {}
 
 
 def _retry_after_seconds(exc: Exception) -> float | None:
@@ -596,6 +689,8 @@ def _is_daily_quota_exhausted(exc: Exception) -> bool:
     an hour. Fail over to the next provider immediately instead.
     """
     message = str(exc).lower()
+    if getattr(exc, "status_code", None) == 402 or any(t in message for t in ("insufficient credit", "insufficient_quota", "payment required", "out of credit")):
+        return True   # OpenRouter 402 / OpenAI insufficient_quota: money, not rate -- fail over loudly, never retry
     if any(t in message for t in ("per day", "tpd", "quota", "daily")):
         return True
     retry_after = _retry_after_seconds(exc)
@@ -701,19 +796,23 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
     try_reasoning_effort = (reasoning_effort is not None and reasoning_effort_key not in provider.unsupported_params)
     retries_used = 0
     drops = 0  # parameter drops don't consume the backoff-retry budget (3 droppable params)
+    truncations = 0
     use_response_format = "response_format" not in provider.unsupported_params
 
-    for loop_i in range(max_retries + 3):
+    for loop_i in range(max_retries + 8):
         attempt = loop_i - drops  # backoff-retry counter
         _acquire_token_budget(provider, _estimate_tokens(system, user, max_tokens))
         try:
             kwargs: dict[str, Any] = dict(
                 model=model,
                 messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-                temperature=0.0,
                 timeout=config.LLM_TIMEOUT_S,
-                max_tokens=max_tokens,
             )
+            # Providers disagree on these: newer OpenAI models want max_completion_tokens and some reasoning
+            # models accept only the default temperature. Both are learned from a 400 and remembered per provider.
+            kwargs["max_completion_tokens" if "max_tokens" in provider.unsupported_params else "max_tokens"] = max_tokens
+            if "temperature" not in provider.unsupported_params:
+                kwargs["temperature"] = 0.0
             if use_response_format:
                 kwargs["response_format"] = {"type": "json_object"}
             else:
@@ -728,8 +827,30 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
             _budget_for(provider).update_from_headers(dict(raw.headers))
             response = raw.parse()
 
-            content = response.choices[0].message.content or "{}"
-            result = _extract_json(content)
+            message = response.choices[0].message
+            content = message.content or ""
+            if not content.strip():
+                # some reasoning models leave `content` empty and put the answer in a reasoning field
+                for attr in ("reasoning_content", "reasoning"):
+                    alt = getattr(message, attr, None)
+                    if isinstance(alt, str) and "{" in alt:
+                        content = alt
+                        break
+            result = _extract_json(content or "{}")
+
+            # A reasoning model can spend the whole token budget on hidden thinking and stop with finish_reason="length"
+            # and nothing usable. Retry with a doubled budget (twice at most) instead of failing the stage.
+            finish = getattr(response.choices[0], "finish_reason", None)
+            if not result and finish == "length" and truncations < 2 and max_tokens < MAX_TOKENS_CEILING:
+                truncations += 1
+                new_budget = min(max_tokens * 2, MAX_TOKENS_CEILING)
+                LOG.warning("Provider %r model %s ran out of tokens (%d) with no usable reply; retrying with %d",
+                            provider.name, model, max_tokens, new_budget)
+                _record_usage(getattr(getattr(response, "usage", None), "prompt_tokens", 0) or 0,
+                              getattr(getattr(response, "usage", None), "completion_tokens", 0) or 0)
+                max_tokens = new_budget
+                drops += 1
+                continue
 
             usage = getattr(response, "usage", None)
             prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
@@ -760,6 +881,19 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
                 provider.unsupported_params.add("seed")
                 drops += 1
                 continue
+
+            # (c) token-limit parameter name / temperature: adapt to the provider, once each, not counted as a backoff.
+            if _is_unsupported_param_error(e) and not _is_auth_error(e):
+                if "max_tokens" not in provider.unsupported_params and _names_param(e, "max_tokens"):
+                    LOG.warning("Provider %r rejected max_tokens; using max_completion_tokens from now on", provider.name)
+                    provider.unsupported_params.add("max_tokens")
+                    drops += 1
+                    continue
+                if "temperature" not in provider.unsupported_params and _names_param(e, "temperature"):
+                    LOG.warning("Provider %r rejected temperature; using its default from now on", provider.name)
+                    provider.unsupported_params.add("temperature")
+                    drops += 1
+                    continue
 
             # (c) a 400 that names response_format / JSON mode: drop it,
             # rely on text extraction (checked before the generic
@@ -801,6 +935,18 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
                 if fallback and fallback != model:
                     model = fallback
                     continue
+
+            if getattr(e, "status_code", None) == 402 or (_is_daily_quota_exhausted(e) and getattr(e, "status_code", None) != 429):
+                # Out of CREDIT (OpenRouter 402, OpenAI insufficient_quota): money is per account, not per model. Take the whole
+                # provider out for this process, say so once, and let the next provider serve the request.
+                provider.exhausted_roles.update({"strong", "fast"})
+                if "credit" not in provider.exhausted_logged_roles:
+                    LOG.error("Provider %r is out of credit (HTTP %s): disabling it for this process and failing over. %s",
+                              provider.name, getattr(e, "status_code", "?"), str(e)[:160])
+                    provider.exhausted_logged_roles.add("credit")
+                diagnostics.record_call(model, 0, 0, retries=retries_used, cache_hit=False,
+                                         seconds=time.monotonic() - call_started, stage=stage)
+                return _DAILY_EXHAUSTED
 
             if isinstance(e, RateLimitError) or getattr(e, "status_code", None) == 429:
                 _record_rate_limit_hit()

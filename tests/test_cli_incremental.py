@@ -116,3 +116,6 @@ def test_resume_does_not_duplicate_existing_ids(tmp_path, monkeypatch):
     rows = [json.loads(l) for l in (tmp_path / "out.jsonl").read_text().splitlines()]
     assert [r["id"] for r in rows] == ["Q0", "Q1", "Q2"]
     assert rows[0]["actions"] == [{"type": "x"}]   # kept as-is, not recomputed
+
+
+pytestmark = pytest.mark.slow

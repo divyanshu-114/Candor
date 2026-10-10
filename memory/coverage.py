@@ -97,3 +97,58 @@ def should_abstain(question: str, visible: Sequence[Unit], retrieved_ids: Iterab
     s = coverage_stats(question, visible, retrieved_ids)
     return (s["missing_share"] >= config.COVERAGE_MISSING_SHARE_MIN
             and s["best_coverage"] < config.COVERAGE_BEST_MAX)
+
+
+def cooccurrence(question: str, retrieved_ids: Sequence[str], visible: Sequence[Unit], top_n: int = 5) -> float:
+    """Best idf-weighted share of the question's content terms found together in ONE retrieved record (plus the adjacent
+    meeting segments). WHY: an unanswerable-but-plausible question ("who is the CFO at Ridgeway?") has every word somewhere in
+    memory -- the company in one record, the role in another -- so the v1 gate (words missing EVERYWHERE) never fires. An answer
+    needs the words to meet in one place."""
+    terms = [t for t in dict.fromkeys(tokenize(question)) if t not in FILLER]
+    if not terms:
+        return 1.0
+    toks = {u.id: set(tokenize(search_text(u))) for u in visible}
+    df: Counter = Counter()
+    for t in toks.values():
+        df.update(t)
+    n = len(toks)
+    idf = {t: math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5)) for t in terms}
+    total = sum(idf.values()) or 1.0
+    by_record: dict[str, list[str]] = {}
+    for u in visible:
+        by_record.setdefault(u.record_id, []).append(u.id)
+    units = {u.id: u for u in visible}
+    best = 0.0
+    for rid in list(retrieved_ids)[:top_n]:
+        u = units.get(rid)
+        if u is None:
+            continue
+        group = {rid}
+        if u.source == "meeting":
+            seq = by_record[u.record_id]
+            i = seq.index(rid)
+            group |= set(seq[max(0, i - 1): i + 2])
+        have = set().union(*(toks.get(g, set()) for g in group))
+        best = max(best, sum(idf[t] for t in terms if _record_has(t, have)) / total)
+    return best
+
+
+def evidence_gate(question: str, visible: Sequence[Unit], retrieved_ids: Sequence[str], ce_scores: dict[str, float] | None) -> tuple[bool, dict]:
+    """(abstain?, signals). v2 no-key gate: abstain when the question's words do not meet in one top record AND the local
+    cross-encoder does not rate the best candidates as answering it. Thresholds in memory/config.py."""
+    co = cooccurrence(question, retrieved_ids, visible)
+    ce = max((ce_scores or {}).get(i, -99.0) for i in list(retrieved_ids)[:3]) if ce_scores else None
+    mode = config.NO_KEY_GATE
+    low_co = co < config.GATE_COOCCUR_MIN
+    low_ce = ce is not None and ce < config.GATE_CE_MIN
+    if mode == "cooccur":
+        abstain = low_co
+    elif mode == "ce":
+        abstain = low_ce
+    elif mode == "both":
+        abstain = low_co and (ce is None or low_ce)
+    elif mode == "either":
+        abstain = low_co or low_ce
+    else:
+        abstain = False
+    return abstain, {"cooccur": round(co, 3), "top_ce": None if ce is None else round(ce, 2)}

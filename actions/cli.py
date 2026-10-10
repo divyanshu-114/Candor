@@ -9,6 +9,7 @@ in input order, `--resume` skips commands already in --out.
 from __future__ import annotations
 
 import argparse
+from memory import llm as _llm
 import json
 import logging
 import os
@@ -18,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from actions import config
-from memory import diagnostics, ordered_io
+from memory import degraded, diagnostics, ordered_io
 from actions.planner import plan
 from actions.rules import GENERIC_CLARIFY
 
@@ -87,6 +88,10 @@ class _TokenCounter:
 TOKENS = _TokenCounter()
 
 
+_DIAGS: list[dict] = []
+DIAGNOSTICS_PATH = Path("outputs/actions_diagnostics.jsonl")
+
+
 def _process_one(item: dict, data_dir: str, cache_dir: str) -> str:
     cid = item["id"]
     command = item["command"]
@@ -97,21 +102,27 @@ def _process_one(item: dict, data_dir: str, cache_dir: str) -> str:
     except Exception:
         LOG.exception("plan() raised for command id=%s; falling back to clarify", cid)
         actions = [{"type": "clarify", "args": {"question": GENERIC_CLARIFY}}]  # never echo the command
-    TOKENS.add(diagnostics.finish(cid))
+    diag = diagnostics.finish(cid)
+    TOKENS.add(diag)
+    with TOKENS._lock:
+        _DIAGS.append(diag)
     return json.dumps({"id": cid, "actions": actions}) + "\n"
 
 
 def answer(commands: Path, out: Path, data_dir: str | None = None, cache_dir: str = ".cache",
-           resume: bool = False, workers: int | None = None, ids: set[str] | None = None) -> None:
+           resume: bool = False, workers: int | None = None, ids: set[str] | None = None,
+           diagnostics_path: Path | None = None) -> dict[str, int]:
     data_dir = data_dir or DATA_DIR_DEFAULT
     workers = workers if workers is not None else config.WORKERS
     out.parent.mkdir(parents=True, exist_ok=True)
 
     items = _read_lines(commands)
+    print(_llm.describe_providers(), flush=True)
     # See memory.cli.answer: --ids recomputes only this subset, leaving
     # every other id already in --out untouched, regardless of --resume.
     started = time.monotonic()
     TOKENS.reset()
+    _DIAGS.clear()
 
     def _compute(item: dict) -> str:
         return _process_one(item, data_dir, cache_dir)
@@ -140,6 +151,12 @@ def answer(commands: Path, out: Path, data_dir: str | None = None, cache_dir: st
     elapsed = time.monotonic() - started
     print(TOKENS.summary())
     print(f"[actions] {len(items)} commands ({len(todo)} computed, {len(existing)} resumed) in {elapsed:.1f}s")
+    path = diagnostics_path or DIAGNOSTICS_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(d) + "\n" for d in sorted(_DIAGS, key=lambda d: str(d.get("id")))))
+    counts, seen = degraded.summarize(_DIAGS)
+    print(degraded.banner(counts, seen, str(path), label="commands"))
+    return dict(counts)
 
 
 def main() -> None:
@@ -149,14 +166,17 @@ def main() -> None:
     parser.add_argument("--data-dir", default=None)
     parser.add_argument("--cache-dir", default=".cache")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--strict", action="store_true", help="exit with status 3 if any stage degraded")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument("--ids", default=None,
                          help="comma-separated command ids; recompute only this subset, "
                               "leaving every other id already in --out untouched")
     args = parser.parse_args()
     ids = set(x.strip() for x in args.ids.split(",") if x.strip()) if args.ids else None
-    answer(Path(args.commands), Path(args.out), data_dir=args.data_dir, cache_dir=args.cache_dir,
-           resume=args.resume, workers=args.workers, ids=ids)
+    summary = answer(Path(args.commands), Path(args.out), data_dir=args.data_dir, cache_dir=args.cache_dir,
+                     resume=args.resume, workers=args.workers, ids=ids)
+    if args.strict and summary:
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":

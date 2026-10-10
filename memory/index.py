@@ -105,8 +105,9 @@ class IndexedChunk:
 
 
 class MemoryIndex:
-    def __init__(self, units: Sequence[Unit], cache_dir: str | Path = ".cache") -> None:
+    def __init__(self, units: Sequence[Unit], cache_dir: str | Path = ".cache", dense_model: str | None = None) -> None:
         self.units, self.cache_dir = list(units), Path(cache_dir)
+        self.dense_model = dense_model or config.DENSE_MODEL
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.content_hash = self._hash()
         self.docs = self._load_or_build_docs()
@@ -154,7 +155,12 @@ class MemoryIndex:
         return docs
 
     @property
-    def vector_path(self) -> Path: return self.cache_dir / f"vectors-{self.content_hash}.npy"
+    def vector_path(self) -> Path:
+        # The default model keeps its v1 file name so an existing cache stays valid; any other
+        # model gets its own file (vectors from different models must never be mixed).
+        if self.dense_model == "BAAI/bge-small-en-v1.5":
+            return self.cache_dir / f"vectors-{self.content_hash}.npy"
+        return self.cache_dir / f"vectors-{self.content_hash}-{self.dense_model.replace('/', '__')}.npy"
 
     def warmup(self) -> tuple[int, int, float]:
         """Download/load model and cache all vectors; intentionally no short timeout."""
@@ -165,12 +171,13 @@ class MemoryIndex:
             self._vectors = vectors
             return vectors.shape[1], vectors.shape[0], time.monotonic() - started
         from fastembed import TextEmbedding
-        self._model = TextEmbedding(model_name=config.DENSE_MODEL)
-        print(f"Embedding {len(self.docs)} chunks with {config.DENSE_MODEL}...", flush=True)
+        self._model = TextEmbedding(model_name=self.dense_model)
+        print(f"Embedding {len(self.docs)} chunks with {self.dense_model}...", flush=True)
+        doc_prefix = config.DENSE_DOC_PREFIX.get(self.dense_model, "")
         batches = []
         batch_size = 64
         for start in range(0, len(self.docs), batch_size):
-            texts = [doc.dense_text for doc in self.docs[start:start + batch_size]]
+            texts = [doc_prefix + doc.dense_text for doc in self.docs[start:start + batch_size]]
             batches.extend(self._model.embed(texts, batch_size=batch_size))
             print(f"  embedded {min(start + batch_size, len(self.docs))}/{len(self.docs)}", flush=True)
         vectors = np.asarray(batches, dtype="float32")
@@ -179,7 +186,8 @@ class MemoryIndex:
         self._vectors = vectors
         return vectors.shape[1], vectors.shape[0], time.monotonic() - started
 
-    def bm25(self, question: str, visible_ids: set[str], limit: int) -> list[tuple[str, float]]:
+    def bm25_scores(self, question: str, visible_ids: set[str]) -> dict[str, float]:
+        """BM25 score of every visible record that shares a token with the query (unsorted, unlimited)."""
         scores: dict[str, float] = {}
         for token in dict.fromkeys(tokenize(question)):
             posting = self.postings.get(token, [])
@@ -192,27 +200,42 @@ class MemoryIndex:
                 dl = self.lengths[doc_i]
                 score = idf * tf * (config.BM25_K1 + 1) / (tf + config.BM25_K1 * (1 - config.BM25_B + config.BM25_B * dl / self.avgdl))
                 scores[doc.parent_id] = scores.get(doc.parent_id, 0) + score
+        return scores
+
+    def bm25(self, question: str, visible_ids: set[str], limit: int) -> list[tuple[str, float]]:
+        scores = self.bm25_scores(question, visible_ids)
         return sorted(scores.items(), key=lambda x: (-x[1], x[0]))[:limit]
 
-    def dense(self, question: str, visible_ids: set[str], limit: int) -> list[tuple[str, float]]:
-        if not config.USE_DENSE: return []
+    def _load_dense(self) -> None:
+        import numpy as np
+        if self._vectors is None:
+            if not self.vector_path.exists(): raise RuntimeError("embedding cache missing; run `python -m memory.cli warmup`")
+            self._vectors = np.load(self.vector_path)
+            self._parents = [d.parent_id for d in self.docs]
+            self._skip = np.array([d.short_meeting for d in self.docs])
+        if self._model is None:
+            from fastembed import TextEmbedding
+            self._model = TextEmbedding(model_name=self.dense_model)
+
+    def dense_scores(self, question: str, visible_ids: set[str]) -> dict[str, float]:
+        """Best cosine similarity per visible record (all of them, unsorted). Returns {} when dense is
+        unavailable so callers degrade to BM25 only."""
+        if not config.USE_DENSE: return {}
         try:
             import numpy as np
-            if self._vectors is None:
-                if not self.vector_path.exists(): raise RuntimeError("embedding cache missing; run `python -m memory.cli warmup`")
-                self._vectors = np.load(self.vector_path)
-            if self._model is None:
-                from fastembed import TextEmbedding
-                self._model = TextEmbedding(model_name=config.DENSE_MODEL)
-            query = np.asarray(next(self._model.embed([question])), dtype="float32")
+            self._load_dense()
+            query = np.asarray(next(self._model.embed([config.DENSE_QUERY_PREFIX.get(self.dense_model, "") + question])), dtype="float32")
             query /= max(float(np.linalg.norm(query)), 1e-12)
+            sims = self._vectors @ query
             best: dict[str, float] = {}
-            for i in np.argsort(-(self._vectors @ query)):
-                doc = self.docs[int(i)]
-                if doc.parent_id in visible_ids and not doc.short_meeting:
-                    best[doc.parent_id] = max(best.get(doc.parent_id, -1.0), float(self._vectors[int(i)] @ query))
-                if len(best) >= limit: break
-            return sorted(best.items(), key=lambda x: (-x[1], x[0]))[:limit]
+            for i in range(len(sims)):
+                if self._skip[i]: continue
+                pid = self._parents[i]
+                if pid in visible_ids and sims[i] > best.get(pid, -2.0): best[pid] = float(sims[i])
+            return best
         except Exception as exc:
             LOG.warning("Dense retrieval unavailable; continuing with BM25 only: %s", exc)
-            return []
+            return {}
+
+    def dense(self, question: str, visible_ids: set[str], limit: int) -> list[tuple[str, float]]:
+        return sorted(self.dense_scores(question, visible_ids).items(), key=lambda x: (-x[1], x[0]))[:limit]

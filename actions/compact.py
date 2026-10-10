@@ -60,11 +60,10 @@ def compact_world(world: World) -> str:
         f"today: {world.today} {world.weekday}; timezone America/Los_Angeles, UTC offset {off} "
         f"(write every time as ISO 8601 with {off})",
         f"next days: {days}",
-        "PEOPLE (name | slack_id | dm_id | email | int/ext):",
+        "PEOPLE (name | slack_id | email | int/ext; slack_id '-' = not on Slack, use email):",
     ]
     for p in world.people:
-        lines.append(f"{p.name} | {p.slack_id or '-'} | {p.dm_channel or '-'} | {p.email or '-'} | "
-                     f"{'int' if p.internal else 'ext'}")
+        lines.append(f"{p.name} | {p.slack_id or '-'} | {p.email or '-'} | {'int' if p.internal else 'ext'}")
     if world.ambiguous_first_names:
         lines.append("AMBIGUOUS FIRST NAMES: " + "; ".join(
             f"{first}: {', '.join(names)}" for first, names in sorted(world.ambiguous_first_names.items())))

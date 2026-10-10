@@ -1,3 +1,4 @@
+import pytest
 """Concurrency must never reorder output, and --resume must never recompute."""
 import json
 import random
@@ -108,3 +109,6 @@ def test_ids_recomputes_only_the_requested_subset():
         assert set(second_pass) == set(first_pass), "--ids run dropped ids that were already in --out"
         for qid in ("Q-0", "Q-2", "Q-4"):
             assert second_pass[qid] == first_pass[qid], f"{qid} was untouched by --ids but changed anyway"
+
+
+pytestmark = pytest.mark.slow

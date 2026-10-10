@@ -1,0 +1,61 @@
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'strong' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+Role 'fast' is frozen (LLM_FROZEN_ROLES) and this request is not cached; not calling the provider.
+      analysis:     0.0 prompt +    0.0 completion =     0.0
+        rerank:     0.0 prompt +    0.0 completion =     0.0
+        writer:     0.0 prompt +    0.0 completion =     0.0
+         TOTAL:     0.0 tokens/question
+
+=== memory_dev_subset12.jsonl v1 KEY(replay) | n=12 | with answers | frozen=strong,fast | key=yes ===
+category                n  retrieval  answer  abst/ans
+abstention              1       1.00    1.00     0/0  
+as_of_time_travel       1       0.00    0.00     0/1  
+cross_source            1       0.00    1.00     0/1  
+deleted_message         1       1.00    0.00     0/0  
+disagreement            1       1.00    0.00     0/1  
+edited_record           1       1.00    1.00     0/1  
+entity_disambiguation   1       1.00    0.00     0/1  
+knowledge_update        1       0.00    0.00     0/1  
+multi_hop               1       1.00    0.00     0/1  
+prompt_injection        1       0.00    0.00     0/1  
+reported_speech         1       1.00    0.00     0/1  
+temporal                1       0.00    0.00     0/1  
+
+RETRIEVAL score 0.5  complete@5/10/20 = 0.5/0.5/0.5  MRR 0.4583  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.250 (3/12)  abstained on answerable 0/10  FALSE-ANSWER rate on unanswerable 1/2 = 0.50
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=0 b=0 c=0 d=0 e=0  (total 0) []
+tokens/question 0  seconds/question 0.53 (wall 1.8s)  degraded stages {'analysis': 12, 'frozen_cache_miss': 12, 'rerank': 12, 'writer': 12}

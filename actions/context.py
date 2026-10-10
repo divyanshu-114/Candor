@@ -62,6 +62,8 @@ class World:
     today: str
     weekday: str
     date_table: list[dict]  # [{"date": "YYYY-MM-DD", "weekday": "Monday"}, ...]
+    last_seen: dict[str, datetime] = field(default_factory=dict)  # person name -> time of their latest record visible at as_of
+    self_name: str = ""  # whose assistant this is (derived from the mailbox, never hard-coded)
 
     def find_by_first_name(self, first_name: str) -> list[Person]:
         fn = first_name.strip().lower()
@@ -192,9 +194,31 @@ def _calendar_events(data_dir: str, as_of: datetime) -> list[dict]:
             "attendees": meta.get("attendees", []),
             "status": meta.get("status"),
             "location": meta.get("location", ""),
+            "recurrence": meta.get("recurrence"),
         })
     events.sort(key=lambda e: e["start"] or "")
     return events
+
+
+def _last_seen(data_dir: str, as_of: datetime) -> dict[str, datetime]:
+    """When each person last wrote, was written to, or was invited -- from records visible at `as_of` only. This is the
+    "recent interaction" cue for a first name that matches two people."""
+    from memory import people as people_mod
+    store = MemoryStore(data_dir)
+    _, involved = people_mod.directory(store)
+    visible = {u.id for u in store.visible(as_of)}
+    out: dict[str, datetime] = {}
+    for name, ids in involved.items():
+        times = [store.get(i).time for i in ids & visible if store.get(i).source != "calendar"]
+        if times:
+            out[name] = max(times)
+    return out
+
+
+def _self_name(data_dir: str) -> str:
+    from memory.ledger import self_name
+    store = MemoryStore(data_dir)
+    return self_name(id(store), len(store.units), store)
 
 
 def build_world(as_of: str | datetime, data_dir: str | None = None) -> World:
@@ -203,7 +227,7 @@ def build_world(as_of: str | datetime, data_dir: str | None = None) -> World:
     as_of_dt = _parse_as_of(as_of)
 
     channels_raw = _load_json(d / "connectors/slack/channels.json")
-    channels = [{"id": c["id"], "name": c.get("name", ""), "is_dm": c.get("is_dm", False)}
+    channels = [{"id": c["id"], "name": c.get("name", ""), "is_dm": c.get("is_dm", False), "members": list(c.get("members", []))}
                 for c in channels_raw]
 
     slack_people = _slack_people(d, channels_raw)
@@ -215,6 +239,7 @@ def build_world(as_of: str | datetime, data_dir: str | None = None) -> World:
         day = as_of_dt + timedelta(days=i)
         date_table.append({"date": day.strftime("%Y-%m-%d"), "weekday": day.strftime("%A")})
 
+    last_seen = _last_seen(data_dir, as_of_dt)
     return World(
         as_of=as_of_dt,
         people=people,
@@ -224,4 +249,6 @@ def build_world(as_of: str | datetime, data_dir: str | None = None) -> World:
         today=as_of_dt.strftime("%Y-%m-%d"),
         weekday=as_of_dt.strftime("%A"),
         date_table=date_table,
+        last_seen=last_seen,
+        self_name=_self_name(data_dir),
     )

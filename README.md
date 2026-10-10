@@ -1,212 +1,105 @@
 # Candor memory
 
-Candor reads two weeks of one person's work life (Slack, email, calendar, meetings, dictation, Codex sessions, ChatGPT chats) and answers questions about it. Every answer names its source records, uses only what was known at the moment of the question, and says "I don't know" when memory has no answer. A second, smaller program turns a command such as "Move board deck prep to 3pm" into a checked, dry-run action plan.
+Candor reads two weeks of one person's work life (Slack, email, calendar, meetings, dictation, Codex sessions, ChatGPT chats) and answers questions about it. Every answer names its source records, uses only what was known at the moment of the question, and says "I don't know" when memory has no answer. A second program turns a command such as "Move board deck prep to 3pm" into a checked, dry-run action plan.
 
-## The 60-second version
+## Run it (60 seconds, no key needed)
 
 ```bash
 git clone <REPO_URL> candor && cd candor      # TODO(user): replace <REPO_URL> with your public GitHub URL
-cp .env.example .env
 ./run.sh memory evals/memory_train.jsonl outputs/answers.jsonl
+./run.sh actions evals/actions_train.jsonl outputs/plans.jsonl
 ```
 
-It works with no API key (skip the `cp`, or delete the two placeholder key lines in `.env`); a key only improves answer quality.
+The first run builds a virtual environment and downloads two small local models (search embeddings and a relevance re-ranker). On a fresh clone here that took **6.5 minutes** and **0.73 GB** (224 MB packages + 504 MB models). Later runs start in seconds.
 
-## What you need
+**Which AI service?** None is required. If you add one key to `.env` the program finds it by itself and picks a strong and a small model: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or your own `CUSTOM_*` (see `.env.example`). If you set several, they are used in that order and each takes over when the one before it runs out of credit or quota. With no key, a banner says so and you still get search, extractive answers and rule-based actions. Every run ends with a banner listing each stage that fell back and how many questions it affected; `--strict` makes the run exit non-zero if anything fell back.
 
-| Need | Detail |
-|---|---|
-| Python | 3.10 or newer. Everything here was run on Python 3.14 on macOS; older versions were not tested. |
-| System | macOS or Linux, with `git`. |
-| Disk | About 0.3 GB: 212 MB environment, 64 MB embedding model, 4 MB search index. |
-| Time | **133 seconds** for the first run in a fresh clone (setup, install, model download, 27 questions); later runs are much faster. |
-| Internet | Only for the first-run downloads (packages and the small local embedding model `BAAI/bge-small-en-v1.5`) and for model calls if you add a key. |
+## What changed in v2 (all numbers from the final commit)
 
-## Run it
+Two scores matter. **Retrieval** (main score): the right records are in the top 10 and nothing from the future or deleted is. **Answers**: the official rule scorer, strict. n is small (19-35 scored questions per set), so one question is worth 3-5 points.
 
-**a) Memory questions.** One JSON object per line in, one per line out.
+| Set | What it is | Used for tuning? |
+|---|---|---|
+| train (27), dev (24) | the given and earlier questions | yes |
+| v2_dev (40) | new, written for v2 | yes |
+| v2_holdout (25) | new; only its totals were ever looked at, at the end of each phase; it decided whether the new answer writer stays on | partly (one decision) |
+| **v2_holdout2 (25) and actions_holdout2 (20)** | written after the audit, then frozen; each run once at the end | **no** |
 
-```json
-{"id": "MEM-TR-01", "question": "When is Route Planner v2 launching?", "as_of": "2026-09-18T18:00:00-07:00"}
-```
-```json
-{"id": "MEM-TR-01", "answer": "October 21, 2026. ...", "sources": ["MTG-0916-GONOGO#0077"], "retrieved": ["MTG-0916-GONOGO#0077", "SL-F-0164", "SL-RP-0910-1"], "abstained": false}
-```
+**Retrieval, main score**
 
-`retrieved` is the ranked list of record ids looked at (best first, up to 20): the main score. `sources` are the ids the answer relies on. `abstained: true` means "not in memory".
+| Set | v1, no key | v2, no key | v2, with a model |
+|---|---|---|---|
+| train | 64.0% | 92.0% | 96.0% |
+| dev (24) | 57.9% | 78.9% | not run |
+| v2_dev | 68.6% | 82.9% | 88.6% |
+| v2_holdout | 75.0% | 75.0% | 80.0% |
+| **v2_holdout2 (fresh)** | **63.2%** | **84.2%** | **84.2%** |
 
-**Try it yourself.** One question asked as of two moments gives different answers (no key needed; output shortened):
+v1 with a model (Groq, measured live on 10-02/03 and today): train 80.0%, v2_dev 82.9%. Today's v1 numbers need the old cache, which only covers part of train, so I did not re-run them.
 
-```bash
-cat > my_questions.jsonl <<'EOF'
-{"id": "early", "question": "When is board deck prep?", "as_of": "2026-09-10T12:00:00-07:00"}
-{"id": "late",  "question": "When is board deck prep?", "as_of": "2026-09-18T18:00:00-07:00"}
-EOF
-./run.sh memory my_questions.jsonl my_answers.jsonl
-```
-```text
-early -> Board deck prep When Thursday Sep 17, 2026 2pm - 3pm (Pacific Time - Los Angeles) Where Brightline HQ ...   sources: ['EM-F-003']
-late  -> Moved board deck prep to Fri 10am, Thursday got messy.                                                sources: ['SL-F-0128']
-```
+**Answers, strict rule score (with a model = OpenRouter, gpt-oss-120b ranks, gpt-oss-20b writes)**
 
-On Sep 10 only the calendar invite exists; by Sep 18 a Slack message has moved the meeting.
+| Set | v1, no key | v2, no key | v2, with a model | False answers on unanswerable questions, with a model |
+|---|---|---|---|---|
+| train | 25.9% | 37.0% | 77.8% (85.2% on a cold-cache re-run) | 0 of 2 |
+| v2_dev | 20.0% | 22.5% | 67.5% | 0 of 5 |
+| v2_holdout | 20.0% | 40.0% | 56.0% | 2 of 6 |
+| **v2_holdout2 (fresh)** | 12.0% | 8.0% | **64.0%** | **1 of 6** |
 
-**b) Actions (dry run).** Nothing is ever sent; you get the plan.
+v1 with a model: train 74.1% (Groq, 10-03). Run-to-run noise with a model is about +/-2 questions (the same set gave 77.8% and 85.2% on train).
 
-```json
-{"id": "ACT-TR-11", "command": "Delete all my emails from Marcus", "as_of": "2026-09-18T09:00:00-07:00"}
-```
-```json
-{"id": "ACT-TR-11", "actions": [{"type": "confirm", "args": {"summary": "This would change or remove data: Delete all my emails from Marcus. Do you want me to go ahead?"}}]}
-```
+**Actions (dry-run plans)**
 
-Run with `./run.sh actions commands.jsonl plans.jsonl`. Deletions become a confirmation request.
+| Set | v1, no key | v2, no key | v1, with a model | v2, with a model |
+|---|---|---|---|---|
+| train (12) | 4/12 | 12/12 | 12/12 | 11/12 |
+| dev (30) | 13/30 | 29/30 | 27/30 | 29/30 |
+| new dev (15) | 2/15 | 14/15 | 9/15 | 15/15 |
+| **actions_holdout2 (20, fresh)** | not run | **18/20 (90%)** | not run | **16/20 (80%)** |
 
-**c) Interactive assistant (dry run).** Use the virtual environment's Python:
+The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model never tried to send, book or move anything. The v2 rule-based resolver was written after reading these commands, so train/dev/new-dev are development numbers; the fresh 90% is the honest one. Note that on the fresh set the model path (80%) did *worse* than the rules alone (90%): the model is only asked about facts that live in memory, and it makes more mistakes there.
 
-```bash
-./.venv/bin/python -m actions.repl --as-of 2026-09-18T09:00:00-07:00
-> Open Figma
-1. app.open
-     app: Figma
-run it? (y/n) n
-```
+### What the changes are
+- **Search**: each source (meetings, Slack, email, calendar, dictation, Codex, ChatGPT) gets its own ranking so no source drowns out another; a local relevance model (cross-encoder) re-orders the candidates, so the no-key mode is much better than v1's. A better embedding model (`gte-base`).
+- **Changing facts, relative time, broad questions**: later corrections are pulled in next to the first statement; "after / before / the day before X" finds X first and then the window around it; an explicit date shows that day's calendar; a commitments list (who promised what, extended, done) feeds "what do I owe / what is open".
+- **Answers**: a quote check that forgives small drift ("the", "sorry") but still requires every number and name to match; answers can be partial ("I couldn't find who approved it"); date gaps are computed in code, not by the model.
+- **Actions**: acts when the person/event/time can be worked out (a person with no Slack is emailed; a series uses its next occurrence; "on Slack", "at <Company>", a channel or a very recent conversation picks between two people with the same first name), and asks one specific question only when two candidates stay equally plausible or a required value is missing.
+- **Providers and failures**: any OpenAI-compatible service works, models are picked automatically, a payment failure (HTTP 402) or exhausted quota moves on to the next service loudly, and parameter differences between services (`max_completion_tokens`, `temperature`, `seed`, reasoning models that run out of tokens) are handled.
+- **Secrets**: the over-eager masking that also hid "SSO is on our Q4 roadmap" now masks real credentials only (the pasted key in the data is still masked; tests check this without printing it).
 
-**d) Useful flags**
+## What still does not work (with numbers)
+- **Broad "what is still open / what do I owe" questions**: 0 of 2 retrieved on each of the two newest sets, with or without a model. The commitments list helps on easy cases but misses promises spread across many records.
+- **No key means weak answers**: extractive answers score 8-40% and **every unanswerable question gets an answer** (6 of 6 on both holdouts). I tried two no-key "is this in memory?" checks (words meeting in one record; cross-encoder score). On the tuning sets the cross-encoder score caught 1 of 7 unanswerable questions at zero wrong refusals, and 0 of 6 on the holdout, so it stays off.
+- **The model path for actions can be worse than the rules** (80% vs 90% on the fresh set).
+- **Holdout (v1) retrieval did not move without a model** (75% before and after), so part of the train/dev gain is tuning.
+- With a model, one question's answer can change between runs by a point or two; a few percent of model calls fail on this service and that question falls back to an extractive answer.
+- Some questions need records scattered across many items ("which vendors sent cold emails"): not solved.
+- A possible error in an older dev question (`MEM-DEV-09` lists an event that is not on the asked day) was left as is.
 
-| Flag or variable | What it does |
-|---|---|
-| `--resume` | Skip ids already in the output file. Output is written one line at a time in input order, so a killed run leaves a valid file. |
-| `--ids A,B` | Recompute only those ids; the rest of the output file is untouched. |
-| `--retrieval-only` | Memory only: write the ranked `retrieved` ids and skip the answer. |
-| `MODE=baseline\|no_rerank\|full` | How much model help is used (default `full`). |
-| `WORKERS=N` | Parallel workers (default 4). |
-| `DATA_DIR=./data` | Where the data lives. |
-| `LLM_FROZEN_ROLES=strong,fast` | Never send a model request for those roles; saved replies are still used. Costs nothing. |
+## What was tuned on what, and the cost
+- Tuned on **train, dev, v2_dev** (weights for the relevance model, bonus sizes, which features stay on). `v2_holdout` totals decided one thing (the new answer writer is on). `v2_holdout2` and `actions_holdout2` were written after the audit in `docs/OVERFIT_AUDIT.md`, frozen, and run once.
+- **Models used**: OpenRouter `openai/gpt-oss-120b` ($0.037 in / $0.17 out per million tokens) to rank candidates, `openai/gpt-oss-20b` ($0.018 / $0.09) for question analysis, answers and actions. Earlier v1 numbers used the same two models on Groq's free tier.
+- **Cost**: a cold-cache run of the 27 train questions (search and answers) costs about **10.5k tokens per question, 284k in total, about 1.2 US cents**. The whole v2 session's model spend was **7.2 US cents** (about 2.3 million tokens). Building the commitments list costs 0 tokens (rules); the optional model pass over it would cost about 17k tokens. No-key runs cost nothing; about 10 s per question (the local relevance model). With a model: 8-50 s per question on this service.
 
 ## Check it works
-
 ```bash
-./.venv/bin/python -m pytest -q          # 363 tests, about 11 seconds, no network, no key
-python3 eval_harness/score_retrieval.py --gold evals/memory_train.jsonl --answers outputs/answers.jsonl
-python3 eval_harness/score_memory.py --gold evals/memory_train.jsonl --answers outputs/answers.jsonl --judge none
-python3 eval_harness/score_actions.py --gold evals/actions_train.jsonl --predictions outputs/plans.jsonl
-./run.sh score-memory outputs/answers.jsonl
-./scripts/release_check.sh
+./.venv/bin/python -m pytest -q                 # 427 fast tests, about 15 s, no network, no key
+./.venv/bin/python -m pytest -q -m slow         # 12 integration tests, about 20 s
+./scripts/release_check.sh                      # clean clone, both test suites, no-key run (92.0% on train), secret scan, forbidden-id check: PASSED on the v2 commit
+                                                # (if your default python3 cannot create a venv, run it as PYTHON=/path/to/python3.13 ./scripts/release_check.sh)
+.venv/bin/python scripts/eval_report.py --questions evals/v2_dev.jsonl           # per-category scores, abstention causes, tokens
+.venv/bin/python scripts/provider_check.py                                       # every model stage on every configured service
+PIPELINE=v1 ./run.sh memory ...                 # the v1 behaviour (with the prompt examples cleaned up)
 ```
-
-(Make the plans file first: `./run.sh actions evals/actions_train.jsonl outputs/plans.jsonl`.) With no key you should see retrieval **64.0%** (95% CI 44-100%) and strict answers **25.9%** (10-50%), and `./run.sh score-memory` prints the same two scores. The actions scorer should show **33.3%** (arguments 50.0%) on the training commands and 43.3% (62.2%) on `evals/actions_dev.jsonl`. The scorers write `results_*.json` files here; delete them before the release check (it needs a clean tree). `release_check.sh` clones the repo fresh, runs the tests and a key-less run, scans code and history for secrets, and checks that no hidden record is ever returned. It took 210 seconds and ends with `RELEASE CHECK: PASSED`. Run it with no API keys exported.
-
-## API keys (optional)
-
-| | No key | With a key |
-|---|---|---|
-| Search | Keyword + local embeddings | Same, plus a larger model re-ranks candidates |
-| Understanding | Heuristics | A small model reads dates and sub-questions |
-| Answers | Best matching sentence; refuses if most question words are absent from memory | A model writes it; each claim needs a verified quote |
-| Actions | Rules only | Rules first, then one or two model calls |
-
-Add a key in `.env`: `GROQ_API_KEY=...` (free at console.groq.com/keys). Any OpenAI-compatible service also works: set `CUSTOM_API_KEY`, `CUSTOM_BASE_URL`, `CUSTOM_MODEL_STRONG`, `CUSTOM_MODEL_FAST` (or the plain `OPENAI_*` names) and add `custom` or `openai` to `LLM_PROVIDERS`; `.env.example` explains each. If a model hits its daily limit or a key is rejected, calls move to the next model, then the next provider.
-
-Free tiers have small daily token limits: wait or add a provider, then `--resume`. Every model reply is saved in `.cache/llm`, so repeating a run is free and byte-identical.
-
-## Results
-
-Official scorers; intervals where the scorer prints one. All dates are 2026; "20b"/"120b" are Groq `gpt-oss-20b`/`gpt-oss-120b`. Train questions were visible while building, so dev rows are the fairer guide.
-
-| What | Mode | Score | 95% CI | n | Models | Date |
-|---|---|---|---|---|---|---|
-| Retrieval, train | replayed from cache | **80.0%** | 68-94% | 27 | gpt-oss-20b + 120b | 10-02/03 |
-| Answers, train, rule scorer | live | **74.1%** strict | 60-88% | 27 | writer 20b | 10-03 |
-| Answers, train, model judge | live | **66.7%** strict | 54-82% | 27 | judge 20b | 10-03 |
-| Actions, train | live | **100.0%** (12 of 12) | not printed | 12 | planner 20b | 10-03 |
-| Actions, dev | live | **90.0%** (27 of 30) | not printed | 30 | planner **120b** | 10-03 |
-| Dev memory (12 of 24): retrieval | live | **60.0%** | 30-90% | 12 | 20b + 120b | 10-03 |
-| Dev memory (12 of 24): answers | live | **58.3%** strict | 33-83% | 12 | writer 120b | 10-03 |
-| Retrieval, train / dev | no key | 64.0% / 57.9% | 44-100% / 35-83% | 27 / 24 | none | 10-03 |
-| Answers strict, train / dev | no key | 25.9% / 20.8% | 10-50% / 4-39% | 27 / 24 | none | 10-03 |
-| Actions, train / dev | no key (rules) | 25.0% / 43.3% | not printed | 12 / 30 | none | 10-03 |
-
-*Note on the last row:* the 25.0% was measured one change earlier. On the final code in a fresh clone it is **33.3%** (arguments 50.0%), because the same-name rule now answers one more training command. Dev (43.3%) did not change.
-
-**Not measured** (free-tier daily token limits): the other 12 dev questions, a model-judged dev score, and dev actions with the default small planner.
-
-Reading it: train actions is partly tuned (a rule fixed one command after it failed; the first live pass was 11 of 12). Dev memory is 12 questions, so intervals are wide, and its writer was the larger model. The judge is a small model, stricter than the rule scorer. Live answers can vary slightly between runs.
-
-## How it works
-
-```
- data/ -> load: hide secrets, remove planted instructions, give every record a stable id
-       -> time filter: drop anything not yet delivered, or already deleted, at "as_of"
-       -> search: keyword (BM25) + local embeddings, merged into one ranking
-       -> small model: understand the question; larger model: reorder the candidates
-       -> writer: answer plus a short quote for each claim
-       -> code check: each quote must appear in the evidence, else abstain
-       -> {"id", "answer", "sources", "retrieved", "abstained"}
-```
-
-- **Specific ids and delivery times** for every segment, message, email, dictation, event and chat message.
-- **Visibility is enforced in code.** Records from after `as_of` and deleted Slack messages are removed before any search or model call.
-- **Secrets and planted instructions** are masked or removed at load time, so they never reach a prompt or an answer.
-- **Hybrid search**: keyword plus a local embedding model, merged by rank.
-- **The model only reorders** a fixed candidate list; it cannot add ids.
-- **Abstain unless a verified quote supports the answer**, checked against the text the writer saw.
-- **Fallbacks.** If a model call fails or there is no key, the plain search ranking is used, so a failure never makes results worse than the baseline.
-
-**Time and `as_of`.** Each record's delivery time follows the data's rule for its source (a Codex session is delivered at its last event). `as_of` is the only gate, so "now" and "last Tuesday" use the same code. Edits replace text from when they happened; deletions remove the message entirely.
-
-**Who said what.** Speakers come from the data. When a record reports what someone else said ("Dana said John told her..."), the writer must give who reported it, what the person said themselves, and any final decision. Unidentified speakers are never guessed. **What failed:** one training question (MEM-TR-08, did John agree to cut dark mode) still loses the second-hand claim: the writer reports only John's own words.
-
-**The two Sarahs.** Sarah Kim is internal (Slack); Sarah Patel is external (Acme Freight). The code finds this collision in the data and, for commands, asks "Which Sarah?" unless the command says "on Slack", "email", Acme, or a surname. **Verified:** that rule and its tests. **Measured:** "Message Sarah about the pricing proposal" is now a clarifying question (before, the planner guessed Sarah Kim). **Failed:** a dev question ("Has Sarah replied about the pricing proposal yet?") was answered "Yes" without noticing two Sarahs.
-
-**Abstention.** "I don't know" whenever no verified quote supports the answer. Both "not in memory" training questions abstain, and a bare "there are no events" is rejected unless a record says so.
-
-## Known limits and what didn't work
-
-- **Search misses cause most wrong answers**: 3 of the 5 wrong dev answers and 4 of the 7 non-correct training answers had the needed record outside the top ten.
-- **"The day I fly to Denver"** (find a date, then look it up) still fails (MEM-TR-25). A date-lookup stage exists but showed no gain under limited model access, so it is off.
-- **Quotes must be exact.** A correct answer (MEM-TR-14) became "I don't know" because its quote dropped one word.
-- **Free-tier limits** (8,000 tokens a minute, daily caps) forced the partial measurement above.
-- **Invented recipient.** On one dev command the planner wrote an email address that exists nowhere. A new check rejects unknown addresses (a safe question instead), but the score did not rise.
 
 ## Repo map
-
 ```text
-memory/        the memory system
-  store.py       time-safe records (as_of, edits, deletes)
-  retrieve.py    search + reranking
-  answer.py      writer, quote check, abstention
-  llm.py         every model call: cache, retries, fallbacks
-  safety.py      secret masking, planted-instruction removal
-actions/       the action planner (planner.py, rules.py)
-eval_harness/  the official scorers (unchanged)
-evals/ examples/ data/   questions and commands, format examples, the records
-scripts/       release_check.sh and helpers
-tests/         363 tests
-docs/          DEVLOG.md: raw development log, for the curious
-run.sh         one-command entry point
-BRIEF.md, PROJECT_RULES.md   the task brief and working guidelines
+memory/        retrieve.py (v1 path), retrieve_v2.py (lanes, cross-encoder, extras), lanes.py, crossenc.py, anchor.py, chains.py, ledger.py,
+               people.py, quotes.py, arith.py, answer.py (writer, quote check), llm.py (services, cache, failover), degraded.py (loud banner)
+actions/       planner.py, resolve.py (deterministic act-vs-ask), timeparse.py, rules.py
+evals/         train/dev/v2 sets, frozen holdouts; scripts/ eval_report, ablate, provider_check, verify_eval_set, spend, gate_calibrate
+docs/          DEVLOG.md (everything tried, incl. failures), OVERFIT_AUDIT.md, V2_PLAN.md, dev_set_notes.md, baselines/
 ```
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| `pip` or the virtual environment fails | Run `python3 -m venv .venv` then `python3 -m ensurepip --upgrade`, or install `uv` (`run.sh` uses it if present). |
-| Embedding model cannot download (offline) | `run.sh` warns "answering BM25-only" and continues with keyword search. |
-| 429 or "daily quota" messages | Wait, add a second provider, or rerun with `--resume`. |
-| Many "I don't know" answers, `Rerank failed` lines | Expected with no key; they are warnings. |
-| Slow first run | Packages, model and search index are built once (133 s here). |
-| Odd model errors | A stale key may be exported: `env \| grep API_KEY`, then unset it. |
-| `release_check.sh` says the tree is dirty | Delete `results_*.json` and other generated files. |
-
-## Tools, models and cost
-
-- **Building:** Antigravity (models: TODO(user): list the models shown in Antigravity); later quota, caching and planner work and this README with Claude Code.
-- **Runtime models:** Groq `openai/gpt-oss-120b` (ranking; also the writer in the dev check) and `openai/gpt-oss-20b` (understanding, writer, planner, judge). The Gemini key was rejected for generation and not used.
-- **Embeddings:** `BAAI/bge-small-en-v1.5` via fastembed, running locally.
-- **Spend:** 0rs (only free tiers were used).
-- **Demo video:** not included
 
 ## Development history
 

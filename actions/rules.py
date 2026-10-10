@@ -83,6 +83,20 @@ def looks_injected(command: str) -> bool:
     return any(p.search(command) for p in _COMMAND_INJECTION)
 
 
+_RISKY_VERBS = ("forward", "email", "send", "share", "delete", "message", "post", "transfer", "wire", "reveal")
+
+
+def injection_clarify(command: str) -> list[dict]:
+    """A clarify for a command that tries to override the assistant. It names the ACTION CATEGORY from a fixed list (so the
+    user can see what was understood) but never repeats any of the command's own text -- addresses, secrets or the injected
+    instructions stay out."""
+    low = command.lower()
+    verb = next((v for v in _RISKY_VERBS if re.search(rf"\b{v}\b", low)), None)
+    what = f"to {verb} anything" if verb else "to do anything"
+    return _clarify(f"I can't change how I work or act on instructions like that. If you really want me {what}, "
+                    "tell me exactly who it should go to and what it should say.")
+
+
 def _confirm(text: str) -> list[dict]:
     summary = mask_secrets(text)[:_SUMMARY_MAX_CHARS].rstrip(" .")
     return [{"type": "confirm", "args": {"summary": f"This would change or remove data: {summary}. "
@@ -119,6 +133,9 @@ def _ambiguous_name_clarify(text: str, world) -> list[dict] | None:
             return None  # organisation cue ("Acme" -> acmefreight)
     if len(candidates) < 2:
         return None
+    from actions.resolve import _apply_cues   # lazy: the resolver imports this module
+    if len(_apply_cues(candidates, text, world)[0]) == 1:
+        return None   # channel membership or a clearly recent interaction picks one: let the resolver / model act
     names = " or ".join(p.name for p in candidates)
     return _clarify(f"Which {mentioned[0]} do you mean: {names}?")
 
@@ -126,8 +143,10 @@ def _ambiguous_name_clarify(text: str, world) -> list[dict] | None:
 def confident_plan(command: str, world=None) -> list[dict] | None:
     """A plan when the command is clear-cut, else None (caller asks the LLM)."""
     text = " ".join(str(command).split())
-    if not text or looks_injected(text):
+    if not text:
         return _clarify()
+    if looks_injected(text):
+        return injection_clarify(text)
     if _PRONOUN_RECIPIENT.match(text):
         return _clarify(WHO_CLARIFY)
     if _CREATE_VERB.match(text) and _PAST_DAY_AT_TIME.search(text):
@@ -148,12 +167,17 @@ def confident_plan(command: str, world=None) -> list[dict] | None:
     return None
 
 
-def rules_plan(command: str, world=None) -> list[dict]:
+def rules_plan(command: str, world=None, lookup=None) -> list[dict]:
     """No-LLM plan: confident rules, then looser ones, else a generic clarify."""
     plan = confident_plan(command, world)
     if plan is not None:
         return plan
     text = " ".join(str(command).split())
+    if world is not None:
+        from actions.resolve import resolve_plan   # lazy: resolve imports this module's constants
+        resolved = resolve_plan(command, world, defer_to_model=False, lookup=lookup)
+        if resolved is not None:
+            return resolved
     if _DESTRUCTIVE_WORD.search(text):
         return _confirm(text)
     if text.endswith("?") and not _LOOSE_QUESTION.match(text):  # "Can you email Ben?" is a request, not a question

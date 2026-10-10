@@ -1,0 +1,42 @@
+LLM providers (in failover order):
+  - openrouter: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+  - groq: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+Writer mentioned a date after as_of for question id=MEM-V2D-02; re-asking once
+Provider 'openrouter' model openai/gpt-oss-120b ran out of tokens (900) with no usable reply; retrying with 1800
+Writer mentioned a date after as_of for question id=MEM-V2D-06; re-asking once
+Writer mentioned a date after as_of for question id=MEM-V2D-21; re-asking once
+Writer mentioned a date after as_of for question id=MEM-V2D-27; re-asking once
+Provider 'openrouter' model openai/gpt-oss-120b ran out of tokens (900) with no usable reply; retrying with 1800
+Failed to decode JSON from a model reply (189 chars)
+Provider 'openrouter' model openai/gpt-oss-120b ran out of tokens (900) with no usable reply; retrying with 1800
+Provider 'openrouter' model openai/gpt-oss-120b ran out of tokens (900) with no usable reply; retrying with 1800
+[diagnostics] 0/40 computed questions had at least one degraded stage (see /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/v2_dev.diag.jsonl)
+[degraded] none: every stage ran for all 40 questions.
+[diagnostics] average tokens/question by stage (prompt+completion):
+      analysis:   732.4 prompt +  166.7 completion =   899.1
+        rerank:  3489.9 prompt +  297.6 completion =  3787.5
+        writer:  3105.2 prompt +  582.6 completion =  3687.8
+         TOTAL:  8374.5 tokens/question
+
+=== v2_dev.jsonl writer_off KEY(openrouter) | n=40 | with answers | frozen=- | key=yes ===
+category                n  retrieval  answer  abst/ans
+abstention              5       1.00    1.00     0/0  
+as_of_time_travel       9       1.00    0.78     0/9  
+commitment_status       2       0.50    0.00     1/2  
+deleted_message         1       1.00    1.00     0/1  
+disagreement            2       0.50    0.00     0/2  
+entity_disambiguation   3       1.00    0.67     1/3  
+knowledge_update        2       1.00    1.00     0/2  
+multi_hop               2       1.00    1.00     0/2  
+preference              1       1.00    1.00     0/1  
+prompt_injection        1       0.00    0.00     1/1  
+reported_speech         2       0.50    0.50     0/2  
+single_fact             3       1.00    0.33     1/3  
+temporal                1       1.00    1.00     0/1  
+work_app                6       1.00    0.50     3/6  
+
+RETRIEVAL score 0.8857  complete@5/10/20 = 0.7429/0.8857/0.9143  MRR 0.8336  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.650 (26/40)  abstained on answerable 7/35  FALSE-ANSWER rate on unanswerable 0/5 = 0.00
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=1 b=4 c=1 d=1 e=0  (total 7) [('MEM-V2D-12', 'd'), ('MEM-V2D-13', 'b'), ('MEM-V2D-14', 'b'), ('MEM-V2D-15', 'c'), ('MEM-V2D-19', 'b'), ('MEM-V2D-22', 'b'), ('MEM-V2D-28', 'a')]
+tokens/question 8374  seconds/question 45.64 (wall 649.7s)  degraded stages none

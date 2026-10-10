@@ -138,3 +138,60 @@ and, for `MEM-DEV-05`, a different `as_of` producing a genuinely different
 correct answer. No question's gold answer, record ids, or exact wording
 were copied from `evals/memory_train.jsonl` -- every gold answer above was
 independently derived from reading the raw records, per rule 7.
+
+---
+
+# v2 sets: `evals/v2_dev.jsonl` (40) and `evals/v2_holdout.jsonl` (25)
+
+Same schema as `memory_train.jsonl` (id, question, as_of, category, answerable, gold_answer, rubric, key_terms, evidence,
+also_supports, storyline, needed groups, stale / future_terms / never_say). Extra optional fields: `computed` (the answer is
+a count or date gap, so its key terms are not literal text), `absence_probe` (words that must not co-occur in one record
+for an unanswerable question), `harm_check` (deleted content: pass only if nothing forbidden is returned).
+`future_terms` is a flat list (the official scorer requires that); `stale` is a list of groups.
+
+**How they were written.** The holdout was written first, then the dev set. Both were written after reading every
+non-meeting record and every meeting transcript in `data/` (not from memory of the train questions), choosing facts that
+the 51 train/dev questions do not ask about, or asking the same story at a different moment or from a different angle.
+Shapes covered, as the brief's categories predict:
+
+| Shape | Where |
+|---|---|
+| A fact that changed 2+ times with a later correction (Pinecrest launch date, regression pass count, root cause of the geocoding bug, next step for a candidate) | HO-01..03, V2D-01..05, 08..09, 34..35 |
+| The same question at 3 different `as_of` times | Pinecrest date (HO-01..03), proposal due date (V2D-01..03) |
+| Relative time (before X, right after X, the day before Y) | HO-13, HO-14, V2D-07 |
+| Same-first-name people (Sarah Kim / Sarah Patel) | HO-07, HO-08, V2D-10..12 |
+| Codex and ChatGPT work | HO-09, 10, 11; V2D-13..18 |
+| Broad (what did I commit / promise / what are the action items) | HO-12, V2D-19, 20 |
+| Multi-step joins (date from one record, event from another; computed gaps) | HO-15, 16; V2D-21, 40 |
+| Second-hand vs own statements | HO-20, V2D-23, 37 |
+| Disagreements | HO-05, 06; V2D-24, 25 |
+| Deleted / edited messages at the moment before and after | HO-17, HO-18; V2D-26 |
+| Unanswerable but plausible (the entity exists, the fact does not) | HO-21..25, V2D-29..33 (+HO-18) |
+| Planted instruction | HO-19, V2D-28 |
+
+## How every gold answer and id was verified (`scripts/verify_eval_set.py`)
+
+The script uses the **official harness loader** (`eval_harness/records.py`: raw text, no masking, our own code not involved)
+and checks, for each question: unique ids and required fields; `as_of` parses; every `needed`/`evidence`/`also_supports`
+id exists (as a unit or a whole record); each is **visible at `as_of`** (delivered by then, not deleted by then); for
+answerable questions every `key_terms` group appears in the text of the cited records (skipped for `computed` ones, which I
+checked by hand: Sep 21 -> Sep 23 is 2 days; Sep 15 -> Sep 25 is 10 days; 07:30 -> 09:00 is 90 minutes); no `future_terms`
+string is already visible in the needed records (the `as_of` really is before the later fact); and for unanswerable
+questions it prints every visible record that contains all the `absence_probe` words so a human can confirm the fact is
+absent. I read each hit: RoadSignal demo (scheduled, no outcome), Acme + telematics (the provider is asked for, never
+named), Jordan + references (reference checks only named as the next step), Ridgeway + dispatcher (truck count only).
+`tests/test_v2_eval_sets.py` re-runs the verifier on both files on every test run. Result: 0 problems on both.
+
+**Things the verifier caught while writing:** a key term (`sarah`) that is not in the cited segments (fixed by citing the
+segment that says "Sarah's round"); a computed answer ("2 days") that was wrongly required as literal text (added the
+`computed` flag); `future_terms` as a list of groups instead of the flat list the scorer wants (the scorer crashed; fixed).
+
+## Real data problems found while reading the corpus (not fixed here)
+
+* **Over-masking at ingestion.** "SSO is on our Q4 roadmap" (meeting segment) becomes `SSO is [REDACTED-SECRET]` because
+  the spoken-secret rule fires on `password ... is <words>`; Codex code lines such as `key=...` and `Foreign-key constraints`
+  are masked too (3 Codex/segment records). The fact is lost to retrieval and to the writer. Planned fix in Phase 3g: require
+  the "value" to look like a secret.
+* Pinecrest's size is stated two ways (180 trucks by Dave Morales, about 140 by Marcus): intentionally used in V2D-37.
+* Jordan Ellis's next step differs by source (debrief: final round; later email and hiring summary: reference check):
+  used in V2D-34/35.

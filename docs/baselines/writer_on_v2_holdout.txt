@@ -1,0 +1,47 @@
+LLM providers (in failover order):
+  - openrouter: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+  - groq: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+Writer mentioned a date after as_of for question id=MEM-HO-02; re-asking once
+Writer mentioned a date after as_of for question id=MEM-HO-03; re-asking once
+Writer mentioned a date after as_of for question id=MEM-HO-08; re-asking once
+Failed to decode JSON from a model reply (9 chars)
+Provider 'openrouter' model openai/gpt-oss-20b ran out of tokens (800) with no usable reply; retrying with 1600
+Writer mentioned a date after as_of for question id=MEM-HO-15; re-asking once
+Writer mentioned a date after as_of for question id=MEM-HO-01; re-asking once
+Writer mentioned a date after as_of for question id=MEM-HO-13; re-asking once
+Failed to decode JSON from a model reply (143 chars)
+[diagnostics] 1/25 computed questions had at least one degraded stage (see /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/v2_holdout.diag.jsonl)
+
+==============================================================================
+DEGRADED STAGES (25 questions in this run)  -- results are valid but weaker than a full run
+==============================================================================
+  writer     1/25 questions  answer writer unavailable; an extractive answer or an abstention was used instead
+  per-question detail: /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/v2_holdout.diag.jsonl   (use --strict to fail the run on any degradation)
+==============================================================================
+[diagnostics] average tokens/question by stage (prompt+completion):
+      analysis:     0.0 prompt +    0.0 completion =     0.0
+        rerank:     0.0 prompt +    0.0 completion =     0.0
+        writer:  4713.3 prompt + 1458.7 completion =  6172.0
+         TOTAL:  6172.0 tokens/question
+
+=== v2_holdout.jsonl writer_on KEY(openrouter) | n=25 | with answers | frozen=- | key=yes ===
+category                n  retrieval  answer  abst/ans
+abstention              5       1.00    0.60     0/0  
+as_of_time_travel       3       1.00    1.00     0/3  
+commitment_status       1       0.00    0.00     0/1  
+cross_source            1       1.00    1.00     0/1  
+deleted_message         2       1.00    1.00     0/1  
+disagreement            2       1.00    0.00     0/2  
+entity_disambiguation   2       1.00    0.00     1/2  
+knowledge_update        1       1.00    1.00     0/1  
+multi_hop               1       1.00    1.00     0/1  
+prompt_injection        1       1.00    1.00     0/1  
+reported_speech         1       0.00    0.00     0/1  
+temporal                2       0.00    0.00     1/2  
+work_app                3       1.00    0.67     0/3  
+
+RETRIEVAL score 0.8  complete@5/10/20 = 0.7895/0.7895/0.8421  MRR 0.7416  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.560 (14/25)  abstained on answerable 2/19  FALSE-ANSWER rate on unanswerable 2/6 = 0.33
+hard failures: 0
+ABSTENTION causes on answerable questions: a=1 b=0 c=1 d=0 e=0  (total 2)
+tokens/question 6172  seconds/question 21.27 (wall 360.8s)  degraded stages {'writer': 1}
