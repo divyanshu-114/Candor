@@ -29,6 +29,7 @@ def main(paths: list[str]) -> None:
         gold = {json.loads(l)["id"]: json.loads(l) for l in open(path) if l.strip()}
         preds = {json.loads(l)["id"]: json.loads(l) for l in open(out) if l.strip()}
         n_ok = n_args = n_args_tot = unnecessary = 0
+        quiet = "holdout" in name      # holdout files: aggregates only, never individual commands
         print(f"\n=== {name}: {len(gold)} commands")
         for cid, g in gold.items():
             pred = preds.get(cid, {"actions": []})["actions"]
@@ -40,11 +41,11 @@ def main(paths: list[str]) -> None:
             n_ok += ok
             clar = [a for a in pred if a["type"] == "clarify"]
             expects_clarify = any(a["type"] == "clarify" for a in g["expected"])
-            if clar:
+            unnecessary += bool(clar) and not expects_clarify and not ok
+            if clar and not quiet:
                 just = "expected" if expects_clarify else ("accepted alternative" if ok else "UNNECESSARY?")
-                unnecessary += (not expects_clarify and not ok)
                 print(f"  clarify [{just}] {cid}: {g['command']!r} -> {clar[0]['args'].get('question')!r}")
-            if not ok:
+            if not ok and not quiet:
                 print(f"  FAIL {cid}: {g['command']!r}\n       pred={json.dumps(pred)[:260]}")
         total += len(gold)
         passed += n_ok
