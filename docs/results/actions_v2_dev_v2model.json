@@ -1,0 +1,244 @@
+{
+  "summary": {
+    "n": 15,
+    "pass_rate": 1.0,
+    "arg_accuracy": 1.0
+  },
+  "items": [
+    {
+      "id": "ACT-V2-01",
+      "command": "Tell Priya the regression plan needs one more review",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "slack.send_message",
+          "args": {
+            "to": "U07PRIYA",
+            "text": "The regression plan needs one more review."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-02",
+      "command": "Message Kelsey about the traffic data demo",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "Which Slack ID should I use to message Kelsey? Please provide the correct Slack ID or channel name."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-03",
+      "command": "Message Dave Morales that the stop reordering fix is in staging",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "gmail.send",
+          "args": {
+            "to": [
+              "dave.morales@pinecrestcarriers.example.com"
+            ],
+            "subject": "The stop reordering fix is in staging",
+            "body": "The stop reordering fix is in staging."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-04",
+      "command": "Create a meeting with Dana",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "When should I schedule it? Please give a day and a time."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-05",
+      "command": "Message Sarah on Slack that the dark mode options doc looks good",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "slack.send_message",
+          "args": {
+            "to": "U03SARAHK",
+            "text": "The dark mode options doc looks good."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-06",
+      "command": "Email Sarah at Acme the updated pricing summary",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "gmail.send",
+          "args": {
+            "to": [
+              "sarah.patel@acmefreight.example.com"
+            ],
+            "subject": "The updated pricing summary",
+            "body": "The updated pricing summary."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-07",
+      "command": "Ask Sarah to send me her feedback on the proposal",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "clarify",
+          "args": {
+            "question": "Which Sarah do you mean: Sarah Kim or Sarah Patel?"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-08",
+      "command": "Message Sarah thanks for the heads up",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "slack.send_message",
+          "args": {
+            "to": "U03SARAHK",
+            "text": "Thanks for the heads up."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-09",
+      "command": "In the route-planner channel tell Sarah the staging build looks good",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "slack.send_message",
+          "args": {
+            "to": "C10RP",
+            "text": "Sarah, the staging build looks good."
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-10",
+      "command": "Move my Dana 1:1 to 3:30pm",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "calendar.update_event",
+          "args": {
+            "event_id": "CAL-F-01",
+            "start": "2026-09-15T15:30:00-07:00",
+            "end": "2026-09-15T16:00:00-07:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-11",
+      "command": "Push the Leadership sync back 15 minutes",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "calendar.update_event",
+          "args": {
+            "event_id": "CAL-F-10",
+            "start": "2026-09-21T11:15:00-07:00",
+            "end": "2026-09-21T12:00:00-07:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-12",
+      "command": "Remind me tomorrow morning at 9 to review the board deck",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "reminder.create",
+          "args": {
+            "text": "Morning to review the board deck",
+            "due": "2026-09-18T09:00:00-07:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-13",
+      "command": "Set up 30 minutes with Priya the day after tomorrow at 11",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "calendar.create_event",
+          "args": {
+            "title": "Meeting with Priya Nair",
+            "start": "2026-09-17T11:00:00-07:00",
+            "end": "2026-09-17T11:30:00-07:00",
+            "attendees": [
+              "priya@brightline.example.com"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-14",
+      "command": "Move the all-hands to 4:30pm",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "calendar.update_event",
+          "args": {
+            "event_id": "CAL-F-16",
+            "start": "2026-09-18T16:30:00-07:00",
+            "end": "2026-09-18T17:00:00-07:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ACT-V2-15",
+      "command": "Remind me an hour before my flight to Denver to check in",
+      "pass": true,
+      "arg_accuracy": 1.0,
+      "predicted": [
+        {
+          "type": "reminder.create",
+          "args": {
+            "text": "Check in for flight to Denver",
+            "due": "2026-09-23T17:10:00-07:00"
+          }
+        }
+      ]
+    }
+  ]
+}

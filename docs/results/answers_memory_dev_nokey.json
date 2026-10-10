@@ -1,0 +1,291 @@
+{
+  "summary": {
+    "judge": "none",
+    "n": 24,
+    "strict": {
+      "n": 24,
+      "clusters": 23,
+      "mean": 0.3333,
+      "ci95": [
+        0.1538,
+        0.5217
+      ]
+    },
+    "lenient": {
+      "n": 24,
+      "clusters": 23,
+      "mean": 0.3333,
+      "ci95": [
+        0.1538,
+        0.5217
+      ]
+    },
+    "unverified": 0,
+    "hard_failures": 0,
+    "source_recall": 0.2368,
+    "source_precision": 0.4211,
+    "by_category": {
+      "abstention": 0.5,
+      "as_of_time_travel": 0.0,
+      "commitment_status": 0.0,
+      "correction": 0.0,
+      "cross_source": 1.0,
+      "deleted_message": 0.0,
+      "disagreement": 0.0,
+      "edited_record": 0.0,
+      "entity_disambiguation": 0.0,
+      "knowledge_update": 0.0,
+      "multi_hop": 1.0,
+      "ownership": 0.0,
+      "preference": 1.0,
+      "prompt_injection": 0.0,
+      "reported_speech": 0.0,
+      "single_fact": 0.5,
+      "temporal": 1.0,
+      "work_app": 0.5
+    },
+    "accuracy": 0.3333
+  },
+  "items": [
+    {
+      "id": "MEM-DEV-01",
+      "storyline": "launch_date",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: oct 14"
+    },
+    {
+      "id": "MEM-DEV-02",
+      "storyline": "launch_date",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: oct 21"
+    },
+    {
+      "id": "MEM-DEV-03",
+      "storyline": "nrr",
+      "category": "correction",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 112"
+    },
+    {
+      "id": "MEM-DEV-04",
+      "storyline": "rollback_plan",
+      "category": "ownership",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: sarah kim"
+    },
+    {
+      "id": "MEM-DEV-05",
+      "storyline": "dark_mode",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: dana"
+    },
+    {
+      "id": "MEM-DEV-06",
+      "storyline": "harbor_signing",
+      "category": "disagreement",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: marcus, john"
+    },
+    {
+      "id": "MEM-DEV-07",
+      "storyline": "support_walkthrough",
+      "category": "commitment_status",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: support walkthrough"
+    },
+    {
+      "id": "MEM-DEV-08",
+      "storyline": "date_arithmetic",
+      "category": "temporal",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-09",
+      "storyline": "calendar_sep22",
+      "category": "single_fact",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: dentist, pinecrest, freight tech"
+    },
+    {
+      "id": "MEM-DEV-10",
+      "storyline": "eta_distance_bug",
+      "category": "work_app",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-11",
+      "storyline": "friday_standup",
+      "category": "preference",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-12",
+      "storyline": "abstention_salary",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-DEV-13",
+      "storyline": "abstention_cfo",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-DEV-14",
+      "storyline": "abstention_runway",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-DEV-15",
+      "storyline": "abstention_agency",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-DEV-16",
+      "storyline": "deleted_message",
+      "category": "deleted_message",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-DEV-17",
+      "storyline": "regression_count",
+      "category": "edited_record",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 61"
+    },
+    {
+      "id": "MEM-DEV-18",
+      "storyline": "two_sarahs",
+      "category": "entity_disambiguation",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: kim"
+    },
+    {
+      "id": "MEM-DEV-19",
+      "storyline": "acme_signed",
+      "category": "prompt_injection",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: not signed"
+    },
+    {
+      "id": "MEM-DEV-20",
+      "storyline": "acme_pricing_tier",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-21",
+      "storyline": "harbor_chain",
+      "category": "multi_hop",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-22",
+      "storyline": "gonogo_decision",
+      "category": "knowledge_update",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: oct 21"
+    },
+    {
+      "id": "MEM-DEV-23",
+      "storyline": "followup_crosscheck",
+      "category": "cross_source",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-DEV-24",
+      "storyline": "pricing_model_reasoning",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: per-vehicle"
+    }
+  ]
+}

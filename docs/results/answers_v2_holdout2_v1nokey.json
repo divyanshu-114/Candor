@@ -1,0 +1,293 @@
+{
+  "summary": {
+    "judge": "none",
+    "n": 25,
+    "strict": {
+      "n": 25,
+      "clusters": 17,
+      "mean": 0.12,
+      "ci95": [
+        0.0,
+        0.2632
+      ]
+    },
+    "lenient": {
+      "n": 25,
+      "clusters": 17,
+      "mean": 0.12,
+      "ci95": [
+        0.0,
+        0.2632
+      ]
+    },
+    "unverified": 0,
+    "hard_failures": 0,
+    "source_recall": 0.4211,
+    "source_precision": 0.5789,
+    "by_category": {
+      "abstention": 0.0,
+      "as_of_time_travel": 0.5,
+      "commitment_status": 0.0,
+      "entity_disambiguation": 0.5,
+      "knowledge_update": 0.0,
+      "multi_hop": 0.0,
+      "prompt_injection": 1.0,
+      "reported_speech": 0.0,
+      "temporal": 0.0,
+      "work_app": 0.0
+    },
+    "accuracy": 0.12
+  },
+  "items": [
+    {
+      "id": "MEM-H2-01",
+      "storyline": "regression_pass",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-H2-02",
+      "storyline": "regression_pass",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: started"
+    },
+    {
+      "id": "MEM-H2-03",
+      "storyline": "map_palette",
+      "category": "knowledge_update",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: purple"
+    },
+    {
+      "id": "MEM-H2-04",
+      "storyline": "map_palette",
+      "category": "knowledge_update",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: purple"
+    },
+    {
+      "id": "MEM-H2-05",
+      "storyline": "pipelinepilot_digest",
+      "category": "prompt_injection",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-H2-06",
+      "storyline": "calendar_day",
+      "category": "temporal",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: offsite"
+    },
+    {
+      "id": "MEM-H2-07",
+      "storyline": "acme_call",
+      "category": "temporal",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: embarcadero, remote"
+    },
+    {
+      "id": "MEM-H2-08",
+      "storyline": "onboarding_assumption",
+      "category": "temporal",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: assume no"
+    },
+    {
+      "id": "MEM-H2-09",
+      "storyline": "marcus_promises",
+      "category": "commitment_status",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: deck"
+    },
+    {
+      "id": "MEM-H2-10",
+      "storyline": "sarah_kim_open",
+      "category": "commitment_status",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: training tenant"
+    },
+    {
+      "id": "MEM-H2-11",
+      "storyline": "people",
+      "category": "entity_disambiguation",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: priya"
+    },
+    {
+      "id": "MEM-H2-12",
+      "storyline": "people",
+      "category": "entity_disambiguation",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-H2-13",
+      "storyline": "route_history_db",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: postgis/postgis"
+    },
+    {
+      "id": "MEM-H2-14",
+      "storyline": "dinner",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 425, 175"
+    },
+    {
+      "id": "MEM-H2-15",
+      "storyline": "second_designer",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: not yet"
+    },
+    {
+      "id": "MEM-H2-16",
+      "storyline": "pinecrest",
+      "category": "multi_hop",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 10 days"
+    },
+    {
+      "id": "MEM-H2-17",
+      "storyline": "denver_trip",
+      "category": "multi_hop",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 1 day"
+    },
+    {
+      "id": "MEM-H2-18",
+      "storyline": "acme_fleet",
+      "category": "multi_hop",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 130"
+    },
+    {
+      "id": "MEM-H2-19",
+      "storyline": "harbor_demo",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: marcus, ben"
+    },
+    {
+      "id": "MEM-H2-20",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-H2-21",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-H2-22",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-H2-23",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-H2-24",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    },
+    {
+      "id": "MEM-H2-25",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "answered a question whose answer is not in memory"
+    }
+  ]
+}

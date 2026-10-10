@@ -1,0 +1,447 @@
+{
+  "summary": {
+    "judge": "none",
+    "n": 40,
+    "strict": {
+      "n": 40,
+      "clusters": 30,
+      "mean": 0.675,
+      "ci95": [
+        0.5,
+        0.8261
+      ]
+    },
+    "lenient": {
+      "n": 40,
+      "clusters": 30,
+      "mean": 0.675,
+      "ci95": [
+        0.5,
+        0.8261
+      ]
+    },
+    "unverified": 0,
+    "hard_failures": 0,
+    "source_recall": 0.7452,
+    "source_precision": 0.9062,
+    "by_category": {
+      "abstention": 1.0,
+      "as_of_time_travel": 0.5556,
+      "commitment_status": 0.5,
+      "deleted_message": 1.0,
+      "disagreement": 0.0,
+      "entity_disambiguation": 1.0,
+      "knowledge_update": 1.0,
+      "multi_hop": 1.0,
+      "preference": 1.0,
+      "prompt_injection": 0.0,
+      "reported_speech": 0.0,
+      "single_fact": 0.6667,
+      "temporal": 1.0,
+      "work_app": 0.6667
+    },
+    "accuracy": 0.675
+  },
+  "items": [
+    {
+      "id": "MEM-V2D-01",
+      "storyline": "acme_due_date",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-02",
+      "storyline": "acme_due_date",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-03",
+      "storyline": "acme_due_date",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: sent"
+    },
+    {
+      "id": "MEM-V2D-04",
+      "storyline": "regression_count",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-V2D-05",
+      "storyline": "regression_count",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 60"
+    },
+    {
+      "id": "MEM-V2D-06",
+      "storyline": "dark_mode",
+      "category": "knowledge_update",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-07",
+      "storyline": "churn_dashboard",
+      "category": "temporal",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-08",
+      "storyline": "geocoding_cause",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-09",
+      "storyline": "geocoding_cause",
+      "category": "as_of_time_travel",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: normalizer"
+    },
+    {
+      "id": "MEM-V2D-10",
+      "storyline": "rp229",
+      "category": "entity_disambiguation",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-11",
+      "storyline": "people",
+      "category": "entity_disambiguation",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-12",
+      "storyline": "acme_fleet",
+      "category": "entity_disambiguation",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-13",
+      "storyline": "export_script",
+      "category": "work_app",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-14",
+      "storyline": "route_history",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-V2D-15",
+      "storyline": "haversine",
+      "category": "work_app",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-16",
+      "storyline": "prd_gate",
+      "category": "work_app",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 70%"
+    },
+    {
+      "id": "MEM-V2D-17",
+      "storyline": "postgres_ontime",
+      "category": "work_app",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-18",
+      "storyline": "linkedin",
+      "category": "work_app",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-19",
+      "storyline": "pinecrest_followups",
+      "category": "commitment_status",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "abstained on an answerable question"
+    },
+    {
+      "id": "MEM-V2D-20",
+      "storyline": "one_on_one_actions",
+      "category": "commitment_status",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-21",
+      "storyline": "acme_due_date",
+      "category": "multi_hop",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-22",
+      "storyline": "offsite",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-23",
+      "storyline": "series_a",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: tom"
+    },
+    {
+      "id": "MEM-V2D-24",
+      "storyline": "rollout_order",
+      "category": "disagreement",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: small"
+    },
+    {
+      "id": "MEM-V2D-25",
+      "storyline": "ridgeway",
+      "category": "disagreement",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: commit-ish, best case"
+    },
+    {
+      "id": "MEM-V2D-26",
+      "storyline": "ben_key",
+      "category": "deleted_message",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-27",
+      "storyline": "board_prep",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-28",
+      "storyline": "cold_emails",
+      "category": "prompt_injection",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: roadsignal, pipelinepilot"
+    },
+    {
+      "id": "MEM-V2D-29",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-V2D-30",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-V2D-31",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-V2D-32",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-V2D-33",
+      "storyline": "not_in_memory",
+      "category": "abstention",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "abstained"
+    },
+    {
+      "id": "MEM-V2D-34",
+      "storyline": "jordan_stage",
+      "category": "as_of_time_travel",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-35",
+      "storyline": "jordan_stage",
+      "category": "knowledge_update",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-36",
+      "storyline": "onboarding_invites",
+      "category": "preference",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-37",
+      "storyline": "pinecrest_size",
+      "category": "reported_speech",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: 180"
+    },
+    {
+      "id": "MEM-V2D-38",
+      "storyline": "sagebrush",
+      "category": "single_fact",
+      "verdict": "incorrect",
+      "unverified": false,
+      "score": 0.0,
+      "lenient": 0.0,
+      "reason": "missing key term: price"
+    },
+    {
+      "id": "MEM-V2D-39",
+      "storyline": "qa_failures",
+      "category": "single_fact",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    },
+    {
+      "id": "MEM-V2D-40",
+      "storyline": "board_day",
+      "category": "multi_hop",
+      "verdict": "correct",
+      "unverified": false,
+      "score": 1.0,
+      "lenient": 1.0,
+      "reason": "all rules pass"
+    }
+  ]
+}
