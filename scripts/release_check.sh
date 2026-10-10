@@ -110,7 +110,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 CLONE_DIR="$TMP_DIR/clone"
 
 git clone --quiet "$REPO_ROOT" "$CLONE_DIR"
-python3 -m venv "$CLONE_DIR/.venv"
+"${PYTHON:-python3}" -m venv "$CLONE_DIR/.venv"
 "$CLONE_DIR/.venv/bin/python" -m pip install --quiet --upgrade pip
 "$CLONE_DIR/.venv/bin/python" -m pip install --quiet -r "$CLONE_DIR/requirements.txt"
 
