@@ -85,7 +85,8 @@ The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model
 ```bash
 ./.venv/bin/python -m pytest -q                 # 427 fast tests, about 15 s, no network, no key
 ./.venv/bin/python -m pytest -q -m slow         # 12 integration tests, about 20 s
-./scripts/release_check.sh                      # clean clone, tests, no-key run, secret scan, forbidden-id check
+./scripts/release_check.sh                      # clean clone, both test suites, no-key run (92.0% on train), secret scan, forbidden-id check: PASSED on the v2 commit
+                                                # (if your default python3 cannot create a venv, run it as PYTHON=/path/to/python3.13 ./scripts/release_check.sh)
 .venv/bin/python scripts/eval_report.py --questions evals/v2_dev.jsonl           # per-category scores, abstention causes, tokens
 .venv/bin/python scripts/provider_check.py                                       # every model stage on every configured service
 PIPELINE=v1 ./run.sh memory ...                 # the v1 behaviour (with the prompt examples cleaned up)
