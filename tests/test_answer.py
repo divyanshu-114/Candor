@@ -200,3 +200,19 @@ def test_answer_question_abstains_when_support_quotes_dont_verify():
         assert row["abstained"] is True
         assert row["answer"] == ABSTAIN_ANSWER
         assert row["sources"] == []
+
+
+def test_ce_extractive_picks_best_sentence_and_never_a_header_or_signature(monkeypatch):
+    from memory import answer as ans, config, crossenc
+    from memory.models import Unit
+    from datetime import datetime
+    email = Unit(id="EM-1", record_id="EM-1", source="email", time=datetime(2026, 9, 1), title="s",
+                 text="From: a\nTo: b\nSubject: s\n\nHi Lee,\n\nThe renewal date is March 3. Lunch is tacos today.\n\nThanks,\nPat\n")
+    other = Unit(id="SL-2", record_id="SL-2", source="slack", time=datetime(2026, 9, 1), text="Something unrelated entirely here.", speaker="Pat")
+    monkeypatch.setattr(config, "USE_CROSS_ENCODER", True)
+    monkeypatch.setattr(crossenc, "score", lambda q, docs: [10.0 if "renewal" in d else 0.0 for d in docs])
+    got = ans._ce_extractive(["EM-1", "SL-2"], "When is the renewal?", {"EM-1": email, "SL-2": other})
+    assert got["sources"] == ["EM-1"] and got["answer"].startswith("The renewal date is March 3")
+    assert "From:" not in got["answer"] and "Thanks" not in got["answer"] and len(got["answer"].split()) <= 40
+    monkeypatch.setattr(crossenc, "score", lambda q, docs: None)           # model unavailable -> caller keeps the overlap rule
+    assert ans._ce_extractive(["EM-1"], "q", {"EM-1": email}) is None

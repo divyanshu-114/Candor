@@ -550,6 +550,22 @@ _EMAIL_SIGNOFF_RE = re.compile(
 _EMAIL_GREETING_RE = re.compile(r"^\s*(?:hi|hello|hey|dear)\b[^.!?]{0,40}[,:]?\s*$", re.I)
 
 
+def _email_body_sentences(text: str) -> list[str]:
+    """Sentences of an email BODY only (no headers, quoted replies, greeting or signature)."""
+    parts = text.split("\n\n", 1)
+    body = parts[1] if len(parts) > 1 else parts[0]
+    kept: list[str] = []
+    for line in body.split("\n"):
+        if line.lstrip().startswith(">"):
+            continue
+        if _EMAIL_CHAIN_RE.match(line) or _EMAIL_SIGNOFF_RE.match(line):
+            break
+        if not line.strip() or _EMAIL_GREETING_RE.match(line):
+            continue
+        kept.append(line.strip())
+    return [x for x in _SENTENCE_SPLIT_RE.split(" ".join(kept)) if x.strip()]
+
+
 def _email_body_sentence(text: str, question: str, max_words: int) -> str:
     """One sentence from an email BODY: never the headers/subject, quoted
     reply chains (">" lines, "On ... wrote:", forwarded blocks) or the
@@ -574,6 +590,31 @@ def _email_body_sentence(text: str, question: str, max_words: int) -> str:
     return " ".join(best.split()[:max_words])
 
 
+def _ce_extractive(retrieved_ids: list[str], question: str, visible_units: dict) -> dict | None:
+    """Pick the answer sentence with the local cross-encoder over the top 3 retrieved records (not just word overlap in the top
+    one). Candidates are real sentences (email bodies only: no headers, quoted replies or signatures), each cut to
+    EXTRACTIVE_MAX_WORDS. Returns None when the model is unavailable so the caller keeps the overlap rule."""
+    from memory import crossenc
+    cands: list[tuple[str, str, int]] = []
+    for rank, rid in enumerate(retrieved_ids[:3]):
+        u = visible_units.get(rid)
+        if u is None:
+            continue
+        sents = _email_body_sentences(u.text) if u.source == "email" else [x for x in _SENTENCE_SPLIT_RE.split(u.text) if x.strip()]
+        for x in sents:
+            if len(x.split()) >= 4:
+                cands.append((rid, " ".join(x.split()[: config.EXTRACTIVE_MAX_WORDS]), rank))
+    if not cands or not config.USE_CROSS_ENCODER:
+        return None
+    scores = crossenc.score(question, [c[1] for c in cands])
+    if scores is not None:
+        scores = [sc - (config.EXTRACTIVE_RANK_PENALTY if c[2] > 0 else 0.0) for sc, c in zip(scores, cands)]   # prefer the top record unless another is clearly better
+    if scores is None:
+        return None
+    best = max(range(len(cands)), key=lambda i: (scores[i], -i))
+    return {"answer": _scrub_answer(cands[best][1]), "sources": [cands[best][0]]}
+
+
 def _extractive_answer(retrieved_ids: list[str], question: str, as_of: str, store: MemoryStore) -> dict | None:
     """Most relevant sentence from the top-ranked visible record, <= 40 words.
 
@@ -588,6 +629,10 @@ def _extractive_answer(retrieved_ids: list[str], question: str, as_of: str, stor
     if _coverage_says_abstain(question, visible_list, retrieved_ids):
         return None  # most of the question's vocabulary isn't in memory at all
     visible_units = {u.id: u for u in visible_list}
+    if config.EXTRACTIVE_CE:
+        picked = _ce_extractive(retrieved_ids, question, visible_units)
+        if picked:
+            return picked
     top = visible_units.get(retrieved_ids[0])
     if not top:
         return None
