@@ -18,7 +18,7 @@ def _load(name):
     return mod
 
 
-@pytest.mark.parametrize("name", ["v2_dev.jsonl", "v2_holdout.jsonl"])
+@pytest.mark.parametrize("name", ["v2_dev.jsonl", "v2_holdout.jsonl", "v2_holdout2.jsonl"])
 def test_eval_set_verifies_against_real_records(name, capsys):
     verify = _load("verify_eval_set").verify
     assert verify(str(ROOT / "evals" / name), str(ROOT / "data")) == []

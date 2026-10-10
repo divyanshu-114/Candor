@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEV_ACTIONS = ROOT / "evals" / "actions_dev.jsonl"
 DEV_MEMORY = ROOT / "evals" / "memory_dev.jsonl"
 V2_ACTIONS = ROOT / "evals" / "actions_v2_dev.jsonl"
+H2_ACTIONS = ROOT / "evals" / "actions_holdout2.jsonl"
 
 _spec = importlib.util.spec_from_file_location("score_actions", ROOT / "eval_harness" / "score_actions.py")
 score_actions = importlib.util.module_from_spec(_spec)
@@ -37,7 +38,7 @@ def _check_action(a, where):
         assert set(m) <= MATCHER_KEYS | {"tolerance_min"}, f"{where}.{k}: unknown matcher key in {m!r}"
 
 
-@pytest.mark.parametrize("item", _load(DEV_ACTIONS) + _load(V2_ACTIONS), ids=lambda i: i["id"])
+@pytest.mark.parametrize("item", _load(DEV_ACTIONS) + _load(V2_ACTIONS) + _load(H2_ACTIONS), ids=lambda i: i["id"])
 def test_actions_dev_schema(item):
     assert {"id", "command", "as_of", "expected", "alternatives"} <= set(item)
     assert isinstance(item["expected"], list) and item["expected"]
@@ -51,7 +52,7 @@ def test_actions_dev_schema(item):
 
 
 def test_ids_unique_and_nonempty():
-    for path in (DEV_ACTIONS, DEV_MEMORY, V2_ACTIONS):
+    for path in (DEV_ACTIONS, DEV_MEMORY, V2_ACTIONS, H2_ACTIONS):
         ids = [i["id"] for i in _load(path)]
         assert ids and len(ids) == len(set(ids))
 

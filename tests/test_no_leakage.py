@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EVAL_FILES = ["memory_train.jsonl", "memory_dev.jsonl", "v2_dev.jsonl", "v2_holdout.jsonl", "v2_dev_half.jsonl"]
+EVAL_FILES = ["memory_train.jsonl", "memory_dev.jsonl", "v2_dev.jsonl", "v2_holdout.jsonl", "v2_dev_half.jsonl", "v2_holdout2.jsonl"]
 CODE_FILES = sorted(list((ROOT / "memory").glob("*.py")) + list((ROOT / "actions").glob("*.py")))
 # Ids that are generic structural vocabulary rather than distinctive facts.
 GENERIC_IDS: set[str] = set()
