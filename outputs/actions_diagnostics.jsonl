@@ -1,2 +1,0 @@
-{"id": "Q-1", "degraded_stages": [], "llm_calls": [], "llm_retries_total": 0, "prompt_tokens": 0, "completion_tokens": 0, "tokens_by_stage": {}, "seconds": 0.0, "candidate_pool_size": null, "rerank_valid": null, "details": {}}
-{"id": "Q-3", "degraded_stages": [], "llm_calls": [], "llm_retries_total": 0, "prompt_tokens": 0, "completion_tokens": 0, "tokens_by_stage": {}, "seconds": 0.0, "candidate_pool_size": null, "rerank_valid": null, "details": {}}

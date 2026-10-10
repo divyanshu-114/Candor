@@ -26,3 +26,11 @@ outputs/diagnostics.jsonl
 outputs/run_stats.json
 results_retrieval.json
 eval_harness/__pycache__/
+
+# Generated / tool files (never part of a submission)
+outputs/
+*.whl
+get-pip.py
+.freebuff/
+.claude/
+Agents.md
