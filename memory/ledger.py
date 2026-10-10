@@ -66,6 +66,7 @@ class Commitment:
     t0: datetime
     events: list[tuple[str, str, datetime]] = field(default_factory=list)   # (kind, unit id, time), time-ordered; first is the promise
     tokens: frozenset[str] = frozenset()
+    llm: dict = field(default_factory=dict)   # optional model verdict on the promise itself: {owner, due, keep}
 
     def view(self, as_of: datetime) -> dict:
         """Status as of `as_of` using only events that already existed then."""
@@ -289,12 +290,14 @@ def lookup(question: str, as_of: datetime, store: MemoryStore, idf: dict[str, fl
     scored = []
     for c in get_ledger(store):
         v = c.view(as_of)
-        if not v["source_ids"] or c.t0 > as_of:
+        if not v["source_ids"] or c.t0 > as_of or c.llm.get("keep") is False:
             continue
+        if c.llm.get("owner"):
+            v = dict(v, owner=c.llm["owner"])
         where = set(tokenize(c.to_whom))                  # the meeting / channel / thread the promise was made in
-        pool = set(c.tokens) | set(tokenize(c.owner))
+        pool = set(c.tokens) | set(tokenize(v["owner"]))
         score = sum(idf.get(t, 1.0) for t in q if t in pool) + 2 * sum(idf.get(t, 1.0) for t in q if t in where)
-        if score > 0 and me and c.owner == me:
+        if score > 0 and me and v["owner"] == me:
             score *= 1.25
         if score > 0:
             scored.append((-score, c.t0, v))

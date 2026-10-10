@@ -103,6 +103,7 @@ EXTRA_BONUS = {"agenda": float(os.environ.get("BONUS_AGENDA", "0.012")), "neighb
                "people": float(os.environ.get("BONUS_PEOPLE", "0.008")), "ledger": float(os.environ.get("BONUS_LEDGER", "0.012"))}
 EXTRAS_MAX = int(os.environ.get("EXTRAS_MAX", "14"))      # most guaranteed extra candidates (chains / anchor / people / ledger)
 USE_ANCHOR = _bool("USE_ANCHOR", "true")                # anchor-then-window for relative time (3d)
+USE_LEDGER_LLM = _bool("USE_LEDGER_LLM", "false")        # optional model pass over the commitments (owner / due / is-it-real); ~17k tokens once
 USE_AGENDA = _bool("USE_AGENDA", "true")                # explicit dates in the question ("on September 22nd") -> that day's calendar and records
 AGENDA_CAP = int(os.environ.get("AGENDA_CAP", "14"))
 USE_PEOPLE = _bool("USE_PEOPLE", "true")                # person resolution metadata (writer is told about ambiguity)

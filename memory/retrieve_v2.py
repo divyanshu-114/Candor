@@ -265,6 +265,9 @@ def run_v2(question: str, as_of: str, k: int, store: MemoryStore, index: MemoryI
         extras["people"] = list(dict.fromkeys(got))
     if config.USE_LEDGER:
         from memory import ledger as ledger_mod
+        if config.USE_LEDGER_LLM and llm_module.is_available():
+            from memory import ledger_llm
+            ledger_llm.apply(store)
         if ledger_mod.wants_ledger(question):
             from datetime import datetime
             hits = ledger_mod.lookup(question, datetime.fromisoformat(as_of.replace("Z", "+00:00")), store, idf)
