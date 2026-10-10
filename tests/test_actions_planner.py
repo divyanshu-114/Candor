@@ -141,7 +141,7 @@ def test_compact_prompt_stays_under_budget_on_real_data():
         world = build_world(item["as_of"], "data")
         user = compact_world(world) + "\nCOMMAND: " + item["command"]
         assert estimate_tokens(user) < 1200, (item["id"], estimate_tokens(user))
-    assert estimate_tokens(planner.PLAN_SYSTEM) < 600 and estimate_tokens(planner.FOLLOWUP_SYSTEM) < 300
+    assert estimate_tokens(planner.PLAN_SYSTEM) < 650  # v2 added the act-vs-ask policy (~+60 tokens) and estimate_tokens(planner.FOLLOWUP_SYSTEM) < 300
 
 
 def test_compact_world_window_and_format():
