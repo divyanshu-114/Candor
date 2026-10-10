@@ -603,7 +603,7 @@ def answer_question(qid: str, question: str, as_of: str, data_dir: str | None = 
     visible_ids = {u.id for u in store.visible(as_of)}
     as_of_dt = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
 
-    if not llm_module.GROQ_API_KEY:
+    if not llm_module.is_available():
         extractive = _extractive_answer(retrieved_ids, question, as_of, store)
         if not extractive:
             return _abstain_row(qid, retrieved_ids, "no records retrieved, or the coverage gate found the question's terms absent from memory")

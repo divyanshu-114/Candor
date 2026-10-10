@@ -10,6 +10,7 @@ Robustness contract (see docs/DEVLOG.md "hardening" entry):
 from __future__ import annotations
 
 import argparse
+from memory import llm as _llm
 import json
 import logging
 import os
@@ -105,6 +106,7 @@ def answer(questions: Path, out: Path, data_dir: str | None = None, cache_dir: s
     out.parent.mkdir(parents=True, exist_ok=True)
 
     items = _read_lines(questions)
+    print(_llm.describe_providers(), flush=True)
     started = time.monotonic()
     reset_usage()
 

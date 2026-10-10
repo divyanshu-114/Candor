@@ -149,6 +149,11 @@ REASONING_EFFORT_MEDIUM = "medium"
 
 # Model fallback preference order (step 2d): substrings matched, in order,
 # against the provider's GET /models list when the configured model 404s.
+# Automatic model choice for a provider that has a key but no model ids (GET /models; first matching substring wins).
+# WHY these: open instruction-following models first (cheap, reproducible), then the usual flagship / small tiers.
+AUTO_PREFERENCE_STRONG = ["gpt-oss-120b", "gpt-5", "gpt-4.1", "gpt-4o", "claude-sonnet", "claude-opus", "gemini-2.5-pro", "gemini-1.5-pro", "70b", "large"]
+AUTO_PREFERENCE_FAST = ["gpt-oss-20b", "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini", "claude-haiku", "gemini-2.5-flash", "flash", "mini", "8b", "small"]
+NON_CHAT_MARKERS = ("embed", "tts", "whisper", "image", "dall", "moderation", "audio", "realtime", "transcribe", "rerank", "vision-preview", "guard", "safeguard")
 MODEL_PREFERENCE_STRONG = ["120b", "70b"]
 MODEL_PREFERENCE_FAST = ["20b", "8b"]
 

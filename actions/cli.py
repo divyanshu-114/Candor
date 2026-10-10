@@ -9,6 +9,7 @@ in input order, `--resume` skips commands already in --out.
 from __future__ import annotations
 
 import argparse
+from memory import llm as _llm
 import json
 import logging
 import os
@@ -116,6 +117,7 @@ def answer(commands: Path, out: Path, data_dir: str | None = None, cache_dir: st
     out.parent.mkdir(parents=True, exist_ok=True)
 
     items = _read_lines(commands)
+    print(_llm.describe_providers(), flush=True)
     # See memory.cli.answer: --ids recomputes only this subset, leaving
     # every other id already in --out untouched, regardless of --resume.
     started = time.monotonic()

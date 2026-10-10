@@ -63,6 +63,7 @@ class Provider:
     exhausted_roles: set[str] = field(default_factory=set)
     exhausted_logged_roles: set[str] = field(default_factory=set)
     unsupported_params: set[str] = field(default_factory=set)
+    auto_models: bool = False   # model ids are discovered lazily from GET /models (documented preference list)
     _client: OpenAI | None = field(default=None, init=False, repr=False)
 
     @property
@@ -72,6 +73,8 @@ class Provider:
         return self._client
 
     def model_for(self, role: str) -> str:
+        if self.auto_models and not (self.model_strong and self.model_fast):
+            _discover_models(self)
         return self.model_strong if role == "strong" else self.model_fast
 
     def chain(self, role: str) -> list[str]:
@@ -115,10 +118,81 @@ def _build_role_order() -> dict[str, list[str] | None]:
     return {"strong": _env_names("LLM_PROVIDERS_STRONG"), "fast": _env_names("LLM_PROVIDERS_FAST")}
 
 
+# Providers recognised from their API-key variable, in the order they are enabled when LLM_PROVIDERS is not set.
+# name -> default base URL ("" = must come from <NAME>_BASE_URL). All speak the OpenAI chat-completions protocol.
+KNOWN_PROVIDERS: dict[str, str] = {
+    "openai": "https://api.openai.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "custom": "",
+    "anthropic": "https://api.anthropic.com/v1/",
+    "groq": "https://api.groq.com/openai/v1",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
+}
+
+
+def _detect_provider_names() -> list[str]:
+    """Every known provider whose API key variable is set, in KNOWN_PROVIDERS order (used when LLM_PROVIDERS is unset)."""
+    return [n for n in KNOWN_PROVIDERS if (os.environ.get(f"{n.upper()}_API_KEY") or (n == "groq" and GROQ_API_KEY))]
+
+
+def pick_models(model_ids: list[str]) -> tuple[str, str]:
+    """(strong, fast) chosen from a provider's model list by the documented preference lists in config.py: the first
+    preference substring that matches a chat-capable id wins; otherwise the first chat-capable id (strong) / last (fast)."""
+    chat = [m for m in model_ids if not any(x in m.lower() for x in config.NON_CHAT_MARKERS)]
+    def choose(prefs: list[str]) -> str | None:
+        for pref in prefs:
+            hits = [m for m in chat if pref in m.lower()]
+            if hits:
+                return min(hits, key=lambda m: (len(m), m))     # "gpt-4o" before "gpt-4o-mini-2024-..."
+        return None
+    strong = choose(config.AUTO_PREFERENCE_STRONG) or (chat[0] if chat else "")
+    fast = choose(config.AUTO_PREFERENCE_FAST) or (chat[-1] if chat else "")
+    return strong, fast or strong
+
+
+def _discover_models(p: "Provider") -> None:
+    with _MODEL_RESOLVE_LOCK:
+        if p.model_strong and p.model_fast:
+            return
+        try:
+            ids = [m.id for m in p.client.models.list().data]
+        except Exception as e:
+            LOG.error("Provider %r has a key but its model list could not be fetched (%s); set %s_MODEL_STRONG / _FAST. "
+                      "Disabling it for this process.", p.name, e, p.name.upper())
+            p.exhausted_roles.update({"strong", "fast"})
+            p.model_strong = p.model_strong or "unknown"
+            p.model_fast = p.model_fast or "unknown"
+            return
+        strong, fast = pick_models(ids)
+        p.model_strong, p.model_fast = p.model_strong or strong, p.model_fast or fast
+        if not (p.model_strong and p.model_fast):
+            LOG.error("Provider %r offers no chat model I can use.", p.name)
+            p.exhausted_roles.update({"strong", "fast"})
+            return
+        LOG.warning("Provider %r: models chosen automatically: strong=%s fast=%s (override with %s_MODEL_STRONG / _FAST)",
+                    p.name, p.model_strong, p.model_fast, p.name.upper())
+
+
+def describe_providers() -> str:
+    """One human line per enabled provider, or the loud no-key banner. Printed at the start of every run."""
+    live = [p for p in _PROVIDERS if p.api_key and _provider_is_live(p)]
+    if not live:
+        bar = "=" * 78
+        return (f"{bar}\nNO LLM PROVIDER ENABLED (no key mode): query analysis, LLM rerank, the answer writer and the action planner\n"
+                f"are skipped; retrieval, extractive answers and rule-based actions still run. To enable: set one of\n"
+                f"OPENAI_API_KEY, OPENROUTER_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY (or CUSTOM_* ) in .env.\n{bar}")
+    lines = ["LLM providers (in failover order):"]
+    for p in live:
+        mode = "auto-detect on first use" if p.auto_models and not (p.model_strong and p.model_fast) else f"strong={p.model_strong} fast={p.model_fast}"
+        lines.append(f"  - {p.name}: {mode}")
+    return "\n".join(lines)
+
+
 def _build_providers() -> list[Provider]:
     names: list[str] = []
-    for group in (_env_names("LLM_PROVIDERS") or ["groq"], _env_names("LLM_PROVIDERS_STRONG") or [],
-                  _env_names("LLM_PROVIDERS_FAST") or []):
+    configured = _env_names("LLM_PROVIDERS")
+    for group in (configured if configured is not None else (_detect_provider_names() or ["groq"]),
+                  _env_names("LLM_PROVIDERS_STRONG") or [], _env_names("LLM_PROVIDERS_FAST") or []):
         for n in group:
             if n not in names:
                 names.append(n)
@@ -133,18 +207,17 @@ def _build_providers() -> list[Provider]:
             model_fast = os.environ.get(f"{upper}_MODEL_FAST") or LLM_MODEL_FAST
         else:
             api_key = os.environ.get(f"{upper}_API_KEY")
-            base_url = os.environ.get(f"{upper}_BASE_URL", "")
-            if name == "openai" and not base_url:
-                base_url = "https://api.openai.com/v1"
+            base_url = os.environ.get(f"{upper}_BASE_URL", "") or KNOWN_PROVIDERS.get(name, "")
             model_strong = os.environ.get(f"{upper}_MODEL_STRONG", "")
             model_fast = os.environ.get(f"{upper}_MODEL_FAST", "")
             # An OpenAI-compatible endpoint with a single model id serves both roles.
             model_strong, model_fast = model_strong or model_fast, model_fast or model_strong
         if not api_key:
             continue  # provider without a key is skipped
-        if not base_url or not (model_strong and model_fast):
-            LOG.warning("Provider %r has a key but no base URL / model ids; skipping it.", name)
+        if not base_url:
+            LOG.warning("Provider %r has a key but no base URL (set %s_BASE_URL); skipping it.", name, upper)
             continue
+        auto = not (model_strong and model_fast)   # key and URL but no model ids: discover through GET /models on first use
         def _fallbacks(role_var: str, default: list[str]) -> list[str]:
             raw = os.environ.get(f"{upper}_MODEL_{role_var}_FALLBACKS")
             return default if raw is None else [m.strip() for m in raw.split(",") if m.strip()]
@@ -154,7 +227,7 @@ def _build_providers() -> list[Provider]:
         groq = name == "groq"
         providers.append(Provider(name=name, api_key=api_key, base_url=base_url,
                                    model_strong=model_strong, model_fast=model_fast,
-                                   model_premium=os.environ.get(f"{upper}_MODEL_PREMIUM", ""),
+                                   model_premium=os.environ.get(f"{upper}_MODEL_PREMIUM", ""), auto_models=auto,
                                    fallbacks_fast=_fallbacks("FAST", [model_strong] if groq else []),
                                    fallbacks_strong=_fallbacks("STRONG", [model_fast] if groq else [])))
     return providers
@@ -167,7 +240,8 @@ _ALL_EXHAUSTED_LOGGED: set[str] = set()  # role names already logged as "all pro
 
 def is_available() -> bool:
     """True when at least one configured provider has a key and has not been taken out for the process."""
-    return any(p.api_key and _provider_is_live(p) for p in _PROVIDERS)
+    # GROQ_API_KEY is the legacy, patchable "a key exists" signal (existing tests and callers rely on it)
+    return any(p.api_key and _provider_is_live(p) for p in _PROVIDERS) or bool(GROQ_API_KEY)
 
 
 def reload_providers() -> None:
@@ -613,6 +687,8 @@ def _is_daily_quota_exhausted(exc: Exception) -> bool:
     an hour. Fail over to the next provider immediately instead.
     """
     message = str(exc).lower()
+    if getattr(exc, "status_code", None) == 402 or any(t in message for t in ("insufficient credit", "insufficient_quota", "payment required", "out of credit")):
+        return True   # OpenRouter 402 / OpenAI insufficient_quota: money, not rate -- fail over loudly, never retry
     if any(t in message for t in ("per day", "tpd", "quota", "daily")):
         return True
     retry_after = _retry_after_seconds(exc)
@@ -857,6 +933,18 @@ def _chat_json_one_provider(provider: Provider, model: str, role: str | None, sy
                 if fallback and fallback != model:
                     model = fallback
                     continue
+
+            if getattr(e, "status_code", None) == 402 or (_is_daily_quota_exhausted(e) and getattr(e, "status_code", None) != 429):
+                # Out of CREDIT (OpenRouter 402, OpenAI insufficient_quota): money is per account, not per model. Take the whole
+                # provider out for this process, say so once, and let the next provider serve the request.
+                provider.exhausted_roles.update({"strong", "fast"})
+                if "credit" not in provider.exhausted_logged_roles:
+                    LOG.error("Provider %r is out of credit (HTTP %s): disabling it for this process and failing over. %s",
+                              provider.name, getattr(e, "status_code", "?"), str(e)[:160])
+                    provider.exhausted_logged_roles.add("credit")
+                diagnostics.record_call(model, 0, 0, retries=retries_used, cache_hit=False,
+                                         seconds=time.monotonic() - call_started, stage=stage)
+                return _DAILY_EXHAUSTED
 
             if isinstance(e, RateLimitError) or getattr(e, "status_code", None) == 429:
                 _record_rate_limit_hit()

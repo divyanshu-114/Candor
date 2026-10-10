@@ -125,7 +125,7 @@ def main() -> int:
         cats[r["category"]].append(r)
 
     print(f"\n=== {qpath.name} {args.label}| n={len(gold)} | {'retrieval-only' if args.retrieval_only else 'with answers'} "
-          f"| frozen={os.environ.get('LLM_FROZEN_ROLES') or '-'} | key={'yes' if os.environ.get('GROQ_API_KEY') else 'no'} ===")
+          f"| frozen={os.environ.get('LLM_FROZEN_ROLES') or '-'} | key={'yes' if __import__('memory.llm', fromlist=['x']).is_available() else 'no'} ===")
     hdr = f"{'category':<22}{'n':>3}{'retrieval':>11}" + ("" if args.retrieval_only else f"{'answer':>8}{'abst/ans':>10}")
     print(hdr)
     for c in sorted(cats):
