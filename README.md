@@ -72,14 +72,14 @@ The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model
 - **No key means weak answers**: extractive answers score 8-40% and **every unanswerable question gets an answer** (6 of 6 on both holdouts). I tried two no-key "is this in memory?" checks (words meeting in one record; cross-encoder score). On the tuning sets the cross-encoder score caught 1 of 7 unanswerable questions at zero wrong refusals, and 0 of 6 on the holdout, so it stays off.
 - **The model path for actions can be worse than the rules** (80% vs 90% on the fresh set).
 - **Holdout (v1) retrieval did not move without a model** (75% before and after), so part of the train/dev gain is tuning.
-- With a model, one question's answer can change between runs by a point or two; about 1 in 20 model calls fails on this service and that question falls back to an extractive answer.
+- With a model, one question's answer can change between runs by a point or two; a few percent of model calls fail on this service and that question falls back to an extractive answer.
 - Some questions need records scattered across many items ("which vendors sent cold emails"): not solved.
 - A possible error in an older dev question (`MEM-DEV-09` lists an event that is not on the asked day) was left as is.
 
 ## What was tuned on what, and the cost
 - Tuned on **train, dev, v2_dev** (weights for the relevance model, bonus sizes, which features stay on). `v2_holdout` totals decided one thing (the new answer writer is on). `v2_holdout2` and `actions_holdout2` were written after the audit in `docs/OVERFIT_AUDIT.md`, frozen, and run once.
 - **Models used**: OpenRouter `openai/gpt-oss-120b` ($0.037 in / $0.17 out per million tokens) to rank candidates, `openai/gpt-oss-20b` ($0.018 / $0.09) for question analysis, answers and actions. Earlier v1 numbers used the same two models on Groq's free tier.
-- **Cost**: a cold-cache run of the 27 train questions (search and answers) costs about **10.5k tokens per question, 284k in total, about 1.2 US cents**. The whole v2 session's model spend was **7.2 US cents** (about 2.6 million tokens). Building the commitments list costs 0 tokens (rules); the optional model pass over it would cost about 17k tokens. No-key runs cost nothing; about 10 s per question (the local relevance model). With a model: 8-50 s per question on this service.
+- **Cost**: a cold-cache run of the 27 train questions (search and answers) costs about **10.5k tokens per question, 284k in total, about 1.2 US cents**. The whole v2 session's model spend was **7.2 US cents** (about 2.3 million tokens). Building the commitments list costs 0 tokens (rules); the optional model pass over it would cost about 17k tokens. No-key runs cost nothing; about 10 s per question (the local relevance model). With a model: 8-50 s per question on this service.
 
 ## Check it works
 ```bash
