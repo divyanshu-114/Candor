@@ -5,7 +5,7 @@ Candor reads two weeks of one person's work life (Slack, email, calendar, meetin
 ## Run it (60 seconds, no key needed)
 
 ```bash
-git clone <REPO_URL> candor && cd candor      # TODO(user): replace <REPO_URL> with your public GitHub URL
+git clone https://github.com/divyanshu-114/Candor candor && cd candor
 ./run.sh memory evals/memory_train.jsonl outputs/answers.jsonl
 ./run.sh actions evals/actions_train.jsonl outputs/plans.jsonl
 ```
@@ -33,18 +33,18 @@ Two scores matter. **Retrieval** (main score): the right records are in the top 
 | dev (24) | 57.9% | 78.9% | not run |
 | v2_dev | 68.6% | 82.9% | 88.6% |
 | v2_holdout | 75.0% | 75.0% | 80.0% |
-| **v2_holdout2 (fresh)** | **63.2%** | **84.2%** | **84.2%** |
+| **v2_holdout2 (fresh)** | **68.4%** | **84.2%** | **78.9%** |
 
-v1 with a model (Groq, measured live on 10-02/03 and today): train 80.0%, v2_dev 82.9%. Today's v1 numbers need the old cache, which only covers part of train, so I did not re-run them.
+v1 with a model (Groq, measured live on 10-02/03): train 80.0%, v2_dev 82.9%. **Like for like on the fresh set** (`PIPELINE=v1` with the same OpenRouter models): v2_holdout2 retrieval **73.7%**, answers 60.0%, 0 of 6 false answers, versus v2 78.9% / 68.0% / 0 of 6. On this set v2 with a model retrieves *less* than v2 without one (84.2%): the model rerank costs about one question here, so the local cross-encoder is the main gain.
 
 **Answers, strict rule score (with a model = OpenRouter, gpt-oss-120b ranks, gpt-oss-20b writes)**
 
 | Set | v1, no key | v2, no key | v2, with a model | False answers on unanswerable questions, with a model |
 |---|---|---|---|---|
-| train | 25.9% | 37.0% | 77.8% (85.2% on a cold-cache re-run) | 0 of 2 |
-| v2_dev | 20.0% | 22.5% | 67.5% | 0 of 5 |
+| train | 25.9% | 40.7% | 77.8% (85.2% on a cold-cache re-run) | 0 of 2 |
+| v2_dev | 20.0% | 37.5% | 67.5% | 0 of 5 |
 | v2_holdout | 20.0% | 40.0% | 56.0% | 2 of 6 |
-| **v2_holdout2 (fresh)** | 12.0% | 8.0% | **64.0%** | **1 of 6** |
+| **v2_holdout2 (fresh)** | 12.0% | 8.0% | **68.0%** | **0 of 6** |
 
 v1 with a model: train 74.1% (Groq, 10-03). Run-to-run noise with a model is about +/-2 questions (the same set gave 77.8% and 85.2% on train).
 
@@ -53,7 +53,7 @@ v1 with a model: train 74.1% (Groq, 10-03). Run-to-run noise with a model is abo
 | Set | v1, no key | v2, no key | v1, with a model | v2, with a model |
 |---|---|---|---|---|
 | train (12) | 4/12 | 12/12 | 12/12 | 11/12 |
-| dev (30) | 13/30 | 29/30 | 27/30 | 29/30 |
+| dev (30) | 13/30 | 30/30 | 27/30 | 29/30 |
 | new dev (15) | 2/15 | 14/15 | 9/15 | 15/15 |
 | **actions_holdout2 (20, fresh)** | not run | **18/20 (90%)** | not run | **16/20 (80%)** |
 
@@ -67,6 +67,12 @@ The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model
 - **Providers and failures**: any OpenAI-compatible service works, models are picked automatically, a payment failure (HTTP 402) or exhausted quota moves on to the next service loudly, and parameter differences between services (`max_completion_tokens`, `temperature`, `seed`, reasoning models that run out of tokens) are handled.
 - **Secrets**: the over-eager masking that also hid "SSO is on our Q4 roadmap" now masks real credentials only (the pasted key in the data is still masked; tests check this without printing it).
 
+**Corrections to an earlier summary** (all numbers above are re-scored on the final commit): actions train with a model is **11/12**, not 12/12, and dev with a model **29/30**, not 30/30 (those were older Groq numbers from before the audit); no-key dev is **30/30** (an earlier README table said 29/30); fresh-set retrieval with a model is **78.9%** (an earlier run said 84.2%) and answers **68.0%** (earlier 64.0%), false answers **0 of 6** (earlier 1 of 6); no-key retrieval for v1 on the fresh set is 68.4% (earlier 63.2%). No-key answers changed because the extractive sentence is now picked by the cross-encoder (below).
+
+**Optional model pass over the commitments list** (`USE_LEDGER_LLM`, about 15k tokens): it judged all 94 items and dropped none and changed no owner, so train, v2_dev and v2_holdout were identical on and off. It stays **off** because it did not improve v2_dev.
+
+**No-key answer sentence**: the extractive answer now takes the best sentence among the top 3 records as scored by the cross-encoder (under 40 words, never headers or signatures, lower-ranked records penalised). Aggregate no-key answers: train 37.0 to 40.7, v2_dev 22.5 to 37.5, v2_holdout 44.0 to 40.0 (one question worse), so it is a small tuned gain, not a clean one.
+
 ## What still does not work (with numbers)
 - **Broad "what is still open / what do I owe" questions**: 0 of 2 retrieved on each of the two newest sets, with or without a model. The commitments list helps on easy cases but misses promises spread across many records.
 - **No key means weak answers**: extractive answers score 8-40% and **every unanswerable question gets an answer** (6 of 6 on both holdouts). I tried two no-key "is this in memory?" checks (words meeting in one record; cross-encoder score). On the tuning sets the cross-encoder score caught 1 of 7 unanswerable questions at zero wrong refusals, and 0 of 6 on the holdout, so it stays off.
@@ -75,6 +81,9 @@ The no-key jump from 4/12 to 12/12 is mostly a weak baseline: v1 without a model
 - With a model, one question's answer can change between runs by a point or two; a few percent of model calls fail on this service and that question falls back to an extractive answer.
 - Some questions need records scattered across many items ("which vendors sent cold emails"): not solved.
 - A possible error in an older dev question (`MEM-DEV-09` lists an event that is not on the asked day) was left as is.
+
+## Spend
+Real OpenRouter spend for everything in this round (gpt-oss-120b ranking, gpt-oss-20b writing and planning, counted from `outputs/usage_ledger.jsonl` by `scripts/spend.py`): **$0.08**. Credit was bought in advance: **[FILL IN: credit bought in advance = $___]**. All work lives on `main`; there is no separate v2 branch.
 
 ## What was tuned on what, and the cost
 - Tuned on **train, dev, v2_dev** (weights for the relevance model, bonus sizes, which features stay on). `v2_holdout` totals decided one thing (the new answer writer is on). `v2_holdout2` and `actions_holdout2` were written after the audit in `docs/OVERFIT_AUDIT.md`, frozen, and run once.

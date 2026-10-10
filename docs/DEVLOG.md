@@ -2217,3 +2217,11 @@ Phase 6 done: banner, --strict, provider quirks, provider_check (groq 5/5, openr
 - Weak categories (v2_dev): broad commitment questions. Ledger fixes (2-letter acronyms like "JD", meeting-title weighting, limit 10) are neutral on every set; bonus 0.02/0.035 lowered train. Kept neutral changes, no bonus change. Temporal has no dev failures; temporal failures exist only on v2_holdout (not inspected).
 - Fresh-clone first run: 387 s, 0.73 GB (venv 224 MB, models 504 MB), reproduces 92.0% no-key on train. Cold-cache 27 questions: 10,537 tokens/question (analysis 917, rerank 3,821, writer 5,798). Ledger ingest: 0 tokens (rules); optional LLM pass ~17k.
 - Final fresh-set results (single run each): memory v2_holdout2 no key 84.2% retrieval / 8% answers / 6 of 6 unanswerable answered; with key 84.2% / 64% / 1 of 6; v1 no key 63.2%. actions_holdout2: no key 18/20, with key 16/20.
+
+## Final round (all on main)
+- Reconciled actions on the final commit: key 11/12, 29/30, 15/15, holdout2 16/20; no key 12/12, 30/30, 14/15, 18/20. Earlier "12/12, 30/30" with a model were stale Groq numbers; README no-key dev 29/30 was a typo for 30/30.
+- Like-for-like PIPELINE=v1 with OpenRouter on v2_holdout2: retrieval 73.7%, answers 60.0%, 0/6 false answers.
+- Commitments model pass (USE_LEDGER_LLM, ~15k tokens): 94/94 judged, no drops or owner changes, identical scores on train/v2_dev/v2_holdout. Left OFF.
+- EXTRACTIVE_CE (rank penalty 7, tuned on train+v2_dev only): no-key answers train 40.7, v2_dev 37.5, v2_holdout 40.0 (was 37.0/22.5/44.0). Coverage gate unchanged.
+- v2_holdout2 run once after decisions: no key retrieval 84.2% / answers 8.0% / 6 of 6 false; with key 78.9% / 68.0% / 0 of 6; v1 no key 68.4% / 12.0%. 909 tokens/question with key.
+- Spend this round: $0.0814 (OpenRouter).
