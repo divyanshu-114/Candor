@@ -2225,3 +2225,12 @@ Phase 6 done: banner, --strict, provider quirks, provider_check (groq 5/5, openr
 - EXTRACTIVE_CE (rank penalty 7, tuned on train+v2_dev only): no-key answers train 40.7, v2_dev 37.5, v2_holdout 40.0 (was 37.0/22.5/44.0). Coverage gate unchanged.
 - v2_holdout2 run once after decisions: no key retrieval 84.2% / answers 8.0% / 6 of 6 false; with key 78.9% / 68.0% / 0 of 6; v1 no key 68.4% / 12.0%. 909 tokens/question with key.
 - Spend this round: $0.0814 (OpenRouter).
+
+## Fix-up round after final verification (main)
+- Spend section rewritten: $0.0814, ~2.56M tokens (paid models), $0 credit bought in advance (user-stated); removed the stale 7.2-cent line.
+- Original v1 (tag v1, 4c41059) on v2_holdout2 no key: retrieval 68.4%, answers 12.0%. PIPELINE=v1 on main: same scores; 22/25 retrieved lists identical (3 differ, no score change), answers and sources identical.
+- The old 63.2% for v1 no key came from runs without the dense index (BM25 only): commits 178f252, 8367c3f, f860563, 58a0204 give 63.2% cold and 68.4% after `memory.cli warmup`. A stale `dense-unavailable-*.flag` in .cache is the sign of this state.
+- With-model v2_holdout2 diagnostics: 0 of 25 questions degraded in every stage; 84.2% (no key) vs 78.9% (model) is model behaviour / variance (one question = 5 points).
+- provider_check.py: banner + exit 2 with no service; tests/test_provider_check.py (2 tests). Fast suite 430, slow 12.
+- Hygiene: untracked outputs/, pip files, .freebuff, Agents.md; docs/results/ holds scorer JSON per table row (with-model rows replayed from the response cache with a placeholder key and LLM_FROZEN_ROLES; zero model calls).
+- Replay check: all README with-model rows (retrieval, answers, actions) reproduced exactly; v1 no-key rows reproduced exactly.
