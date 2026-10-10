@@ -75,3 +75,16 @@ def test_version_chain_hint_reaches_the_prompt_in_time_order(run, monkeypatch):
     monkeypatch.setattr(ans, "retrieve", with_chain)
     _, seen = run({"answerable": True, "answer": "Oct 14.", "used_ids": ["SL-3"], "support": [{"id": "SL-3", "quote": "launch moved to Oct 14"}]})
     assert "<chain>SL-2 -> SL-3</chain>" in seen["user"] and "VERSIONS" in seen["system"] and "PARTIAL" in seen["system"]
+
+
+def test_misattributed_id_unicode_hyphens_and_hyphenated_words_are_handled(run):
+    # quote copied from SL-3 but cited under SL-2; id typed with non-breaking hyphens; "US-only"-style hyphenated token in the quote
+    row, _ = run({"answerable": True, "answer": "Moved.", "used_ids": ["SL‑2"],
+                  "support": [{"id": "SL‑2", "quote": "Correction: the launch moved to Oct 14, sorry"}]})
+    assert row["abstained"] is False and row["sources"] == ["SL-3"]
+
+
+def test_hyphenated_capitalised_token_in_a_quote_matches_its_record():
+    from memory.quotes import soft_quote_match
+    assert soft_quote_match("falls back to a US-only region bias", "the geocoder falls back to a US-only region bias. Fix in progress.")
+    assert not soft_quote_match("falls back to a EU-only region bias", "the geocoder falls back to a US-only region bias.")

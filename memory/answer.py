@@ -18,7 +18,7 @@ from memory import llm as llm_module
 from memory import arith
 from memory.coverage import should_abstain as _coverage_says_abstain
 from memory.llm import chat_json
-from memory.quotes import soft_quote_match
+from memory.quotes import clean_unicode, soft_quote_match
 from memory.retrieve import retrieve, _resources
 from memory.safety import mask_secrets, INJECTION_PATTERNS
 from memory.store import MemoryStore
@@ -256,7 +256,9 @@ def build_evidence_package(retrieved_ids: list[str], question: str, as_of: str,
         u = visible_units[uid]
         max_words = config.EVIDENCE_TOP_N_WORDS if rank < config.EVIDENCE_TOP_N else config.EVIDENCE_REST_WORDS
         text = _trim_for_unit(u, question, max_words)
-        extra_context = " ".join(_meeting_context_lines(u, store, as_of)) if u.source == "meeting" else ""
+        context_lines = _meeting_context_lines(u, store, as_of) if u.source == "meeting" else []
+        extra_context = " ".join(context_lines)
+        extra_context_text = re.sub(r"<[^>]+>", " ", extra_context).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
         block = (
             f'<record id="{u.id}" source="{u.source}" time="{u.time.isoformat()}" '
             f'speaker="{_xml_escape(_speaker_label(u))}" speaker_known="{str(bool(u.speaker_known)).lower()}" '
@@ -268,7 +270,9 @@ def build_evidence_package(retrieved_ids: list[str], question: str, as_of: str,
         if blocks_by_id and projected // 4 > config.EVIDENCE_TOKENS:
             break
         blocks_by_id[uid] = block
-        display_text_by_id[uid] = text
+        # What the writer could read next to this record (the neighbouring meeting segments) is also valid quote material: a
+        # quote copied from the segment right after the cited one is a mis-cited id, not an invented fact.
+        display_text_by_id[uid] = (text + " " + extra_context_text) if (config.WRITER_V2 and extra_context_text) else text
         total_chars = projected
 
     chosen = sorted(blocks_by_id.keys(), key=lambda uid: visible_units[uid].time)
@@ -351,13 +355,15 @@ where the number belongs, e.g. "compute": {{"op": "days_between", "a": "2026-09-
 
 PARTIAL ANSWERS: "answerable" is true when the records state the fact asked; "partial" when they state the MAIN fact but not
 a secondary detail the question also asked for (answer what is supported, then one short sentence saying what is missing, and
-fill "missing"); false when no record states the fact asked, even if related records exist (a person, company or event being
-mentioned is not the same as the asked name, price, outcome or number being stated).
+fill "missing"); false ONLY when no record states the fact asked, even if related records exist (a person, company or event being
+mentioned is not the same as the asked name, price, outcome or number being stated). A yes/no or "is it decided" question IS
+answered by a record that gives the current state, the condition or the refusal ("not yet, it is tied to X"): answer it, do not
+mark it false. If you have a supporting quote the answer is true or partial; false always comes with an empty support list.
 
 Return ONLY JSON: {{"answerable": true|"partial"|false, "answer": "...", "missing": "", "compute": null,
 "used_ids": ["id", ...], "support": [{{"id": "<record id>", "quote": "<=15 words copied from that record's text"}}]}}.
-Every claim in the answer must be backed by at least one support quote copied from the evidence (not paraphrased); give a quote
-for each record the answer relies on. If answerable is false: short reason in "answer", used_ids [], support [].
+Every claim in the answer must be backed by a support quote copied from the evidence (not paraphrased); never leave "support"
+empty when answerable is true or "partial". If answerable is false: short reason in "answer", used_ids [], support [].
 """
     return head + tail
 
@@ -433,16 +439,21 @@ def _verify_support(support: list[dict], display_text_by_id: dict[str, str]) -> 
     verified = []
     for item in support:
         uid, quote = item["id"], item["quote"]
+        if config.WRITER_V2:
+            uid, quote = clean_unicode(uid).strip(), clean_unicode(quote)
+            # the cited id first; if the quote is really in ANOTHER record the writer was shown (a mis-cited id), attribute it there
+            for cand in [uid] + [i for i in display_text_by_id if i != uid]:
+                text = display_text_by_id.get(cand)
+                if text and soft_quote_match(quote, clean_unicode(text), config.QUOTE_SOFT_THRESHOLD):
+                    verified.append(cand)
+                    break
+            continue
         record_text = display_text_by_id.get(uid)
         if not record_text:
             continue
-        if config.WRITER_V2:
-            ok = soft_quote_match(quote, record_text, config.QUOTE_SOFT_THRESHOLD)
-        else:
-            ok = bool(_normalize_for_match(quote)) and _normalize_for_match(quote) in _normalize_for_match(record_text)
-        if ok:
+        if bool(_normalize_for_match(quote)) and _normalize_for_match(quote) in _normalize_for_match(record_text):
             verified.append(uid)
-    return verified
+    return list(dict.fromkeys(verified))
 
 
 # ---------------------------------------------------------------------------

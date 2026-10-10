@@ -1,0 +1,6 @@
+[diagnostics] average tokens/question by stage (prompt+completion):
+         TOTAL:     0.0 tokens/question
+=== memory_train.jsonl on-final | n=27 | with answers | frozen=- | key=yes ===
+ANSWERS strict(rules) 0.778 (21/27)  abstained on answerable 4/25  FALSE-ANSWER rate on unanswerable 0/2 = 0.00
+ABSTENTION causes on answerable questions: a=1 b=1 c=2 d=0 e=0  (total 4) [('MEM-TR-15', 'c'), ('MEM-TR-19', 'c'), ('MEM-TR-25', 'a'), ('MEM-TR-26', 'b')]
+tokens/question 0  seconds/question 0.34 (wall 3.2s)  degraded stages none

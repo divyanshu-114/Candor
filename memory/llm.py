@@ -532,7 +532,9 @@ _TOKEN_BUDGETS_LOCK = threading.Lock()
 def _budget_for(provider: Provider) -> _TokenBudget:
     with _TOKEN_BUDGETS_LOCK:
         if provider.name not in _TOKEN_BUDGETS:
-            _TOKEN_BUDGETS[provider.name] = _TokenBudget(config.LLM_TPM)
+            # Groq's free tier really is ~8k tokens/minute; paid services are not throttled below 600k unless <NAME>_TPM says so
+            tpm = config.LLM_TPM if provider.name == "groq" else int(os.environ.get(f"{provider.name.upper()}_TPM", "600000"))
+            _TOKEN_BUDGETS[provider.name] = _TokenBudget(tpm)
         return _TOKEN_BUDGETS[provider.name]
 
 
@@ -577,7 +579,7 @@ class _RateLimiter:
             time.sleep(max(sleep_for, 0.01))
 
 
-_RATE_LIMITER = _RateLimiter(config.LLM_MAX_RPM)
+_RATE_LIMITER = _RateLimiter(config.LLM_MAX_RPM if ('LLM_MAX_RPM' in os.environ or all(p.name == 'groq' for p in _PROVIDERS)) else 300)
 
 # Thread-safe running total of tokens spent this process, for outputs/run_stats.json.
 _USAGE_LOCK = threading.Lock()

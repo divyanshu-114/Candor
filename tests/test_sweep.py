@@ -90,13 +90,18 @@ SWEEP_CASES = [
 ]
 
 
+@pytest.mark.parametrize("pipeline_v2", [True, False])
 @pytest.mark.parametrize("question,as_of", SWEEP_CASES)
-def test_no_forbidden_id_survives_adversarial_rerank(question, as_of, data_store):
+def test_no_forbidden_id_survives_adversarial_rerank(question, as_of, pipeline_v2, data_store, monkeypatch):
+    monkeypatch.setattr(config, "USE_LANES", pipeline_v2)
     store = data_store
     visible_ids = {u.id for u in store.visible(as_of)}
 
+    # both rerank entry points are patched: v1 calls memory.retrieve.chat_json, v2 calls memory.llm.chat_json
     with patch("memory.query.chat_json", side_effect=_worst_case_analysis), \
-         patch("memory.retrieve.chat_json", side_effect=_worst_case_rerank):
+         patch("memory.retrieve.chat_json", side_effect=_worst_case_rerank), \
+         patch("memory.llm.chat_json", side_effect=_worst_case_rerank), \
+         patch("memory.llm.is_available", return_value=True):
         ranked = retrieve(question, as_of, data_dir=DATA_DIR, cache_dir=".cache")
 
     ids = [uid for uid, _score in ranked]

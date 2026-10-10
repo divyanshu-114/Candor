@@ -28,6 +28,15 @@ FILLER = frozenset({
 _TOKEN_RE = re.compile(r"[a-z0-9]+(?:[.,][0-9]+)*")
 
 
+_UNICODE_FIXES = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u00a0": " ", "\u202f": " ",
+                                 "\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"'})
+
+
+def clean_unicode(text: str) -> str:
+    """Models (not Groq's) often return non-breaking spaces and non-breaking hyphens inside ids and quotes: undo them."""
+    return text.translate(_UNICODE_FIXES)
+
+
 def words(text: str) -> list[str]:
     """Lowercased tokens; keeps numbers like 61, 1.8, 187,406 whole and splits apostrophes."""
     text = text.lower().replace("’", "'").replace("'", " ")
@@ -58,7 +67,8 @@ def exact_facts(quote: str) -> list[str]:
     raw = re.findall(r"[A-Za-z][A-Za-z'’-]*", quote)
     for i, tok in enumerate(raw):
         if i > 0 and tok[0].isupper() and not tok.isupper() and tok.lower() not in FILLER:
-            facts.append(tok.lower().replace("'", " ").split()[0])
+            # "US-only" / "Jean-Luc": each hyphen / apostrophe part must appear (the record tokeniser splits on both)
+            facts += [p for p in re.split(r"[-'\u2019]", tok.lower()) if len(p) > 1 and p not in FILLER]
     return facts
 
 

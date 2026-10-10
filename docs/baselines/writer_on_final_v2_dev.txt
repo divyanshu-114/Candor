@@ -1,0 +1,9 @@
+==============================================================================
+==============================================================================
+==============================================================================
+[diagnostics] average tokens/question by stage (prompt+completion):
+         TOTAL:   134.4 tokens/question
+=== v2_dev.jsonl on-final | n=40 | with answers | frozen=- | key=yes ===
+ANSWERS strict(rules) 0.675 (27/40)  abstained on answerable 3/35  FALSE-ANSWER rate on unanswerable 0/5 = 0.00
+ABSTENTION causes on answerable questions: a=0 b=2 c=1 d=0 e=0  (total 3) [('MEM-V2D-04', 'b'), ('MEM-V2D-14', 'b'), ('MEM-V2D-19', 'c')]
+tokens/question 134  seconds/question 0.55 (wall 15.4s)  degraded stages {'writer': 1}

@@ -148,7 +148,8 @@ def _promise_clause(sent: str) -> str:
 
 
 def _content(text: str) -> frozenset[str]:
-    return frozenset(t for t in tokenize(text) if t not in GENERIC and len(t) > 2)
+    acronyms = {a.lower() for a in re.findall(r"\b[A-Z]{2,6}\b", text)}          # "JD", "QA", "ETA" are content even though short
+    return frozenset(t for t in tokenize(text) if t not in GENERIC and len(t) > 2) | acronyms
 
 
 def _counterpart(u, store: MemoryStore) -> str:
@@ -280,7 +281,7 @@ def wants_ledger(question: str) -> bool:
 _FIRST_PERSON = re.compile(r"\b(?:i|my|me|mine|i'?ve|i'?d)\b", re.I)
 
 
-def lookup(question: str, as_of: datetime, store: MemoryStore, idf: dict[str, float], limit: int = 6) -> list[dict]:
+def lookup(question: str, as_of: datetime, store: MemoryStore, idf: dict[str, float], limit: int = 10) -> list[dict]:
     """Commitments (as of `as_of`) whose words overlap the question, best first. A first-person question
     ("what do I owe", "my promises") favours the memory owner's own commitments."""
     q = [t for t in dict.fromkeys(tokenize(question)) if t not in GENERIC]
@@ -290,8 +291,9 @@ def lookup(question: str, as_of: datetime, store: MemoryStore, idf: dict[str, fl
         v = c.view(as_of)
         if not v["source_ids"] or c.t0 > as_of:
             continue
-        pool = set(c.tokens) | set(tokenize(c.owner + " " + c.to_whom))
-        score = sum(idf.get(t, 1.0) for t in q if t in pool)
+        where = set(tokenize(c.to_whom))                  # the meeting / channel / thread the promise was made in
+        pool = set(c.tokens) | set(tokenize(c.owner))
+        score = sum(idf.get(t, 1.0) for t in q if t in pool) + 2 * sum(idf.get(t, 1.0) for t in q if t in where)
         if score > 0 and me and c.owner == me:
             score *= 1.25
         if score > 0:

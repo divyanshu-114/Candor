@@ -1,0 +1,54 @@
+LLM providers (in failover order):
+  - openrouter: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+  - groq: strong=openai/gpt-oss-120b fast=openai/gpt-oss-20b
+Writer mentioned a date after as_of for question id=MEM-TR-03; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-02; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-01; re-asking once
+Failed to decode JSON from a model reply (12 chars)
+Writer mentioned a date after as_of for question id=MEM-TR-19; re-asking once
+Failed to decode JSON from a model reply (12 chars)
+Writer mentioned a date after as_of for question id=MEM-TR-22; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-21; re-asking once
+Writer mentioned a date after as_of for question id=MEM-TR-25; re-asking once
+Failed to decode JSON from a model reply (9 chars)
+Provider 'openrouter' model openai/gpt-oss-20b ran out of tokens (800) with no usable reply; retrying with 1600
+[diagnostics] 2/27 computed questions had at least one degraded stage (see /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/memory_train.diag.jsonl)
+
+==============================================================================
+DEGRADED STAGES (27 questions in this run)  -- results are valid but weaker than a full run
+==============================================================================
+  writer     2/27 questions  answer writer unavailable; an extractive answer or an abstention was used instead
+  per-question detail: /Users/divyanshuraj/Desktop/Candor-Takehome/outputs/scratch/memory_train.diag.jsonl   (use --strict to fail the run on any degradation)
+==============================================================================
+[diagnostics] average tokens/question by stage (prompt+completion):
+      analysis:     0.0 prompt +    0.0 completion =     0.0
+        rerank:     0.0 prompt +    0.0 completion =     0.0
+        writer:  4279.4 prompt +  266.1 completion =  4545.5
+         TOTAL:  4545.5 tokens/question
+
+=== memory_train.jsonl writer_on KEY(openrouter) | n=27 | with answers | frozen=- | key=yes ===
+category                n  retrieval  answer  abst/ans
+abstention              2       1.00    1.00     0/0  
+as_of_time_travel       2       1.00    1.00     0/2  
+commitment_status       3       1.00    1.00     0/3  
+conditional             1       1.00    0.00     1/1  
+correction              1       1.00    0.00     1/1  
+cross_source            1       1.00    1.00     0/1  
+disagreement            1       1.00    0.00     1/1  
+edited_record           1       1.00    1.00     0/1  
+entity_disambiguation   1       1.00    1.00     0/1  
+knowledge_update        2       1.00    1.00     0/2  
+multi_hop               1       1.00    1.00     0/1  
+ownership               2       1.00    1.00     0/2  
+preference              1       1.00    0.00     1/1  
+prompt_injection        1       1.00    0.00     1/1  
+reported_speech         1       1.00    0.00     1/1  
+single_fact             3       1.00    1.00     0/3  
+temporal                2       0.50    0.50     1/2  
+work_app                1       1.00    1.00     0/1  
+
+RETRIEVAL score 0.96  complete@5/10/20 = 0.84/0.96/0.96  MRR 0.9067  forbidden@10 questions 0  forbidden@20 total 0
+ANSWERS strict(rules) 0.741 (20/27)  abstained on answerable 7/25  FALSE-ANSWER rate on unanswerable 0/2 = 0.00
+hard failures: 0 []
+ABSTENTION causes on answerable questions: a=1 b=1 c=1 d=2 e=2  (total 7) [('MEM-TR-08', 'e'), ('MEM-TR-09', 'e'), ('MEM-TR-10', 'd'), ('MEM-TR-11', 'd'), ('MEM-TR-15', 'c'), ('MEM-TR-25', 'a'), ('MEM-TR-26', 'b')]
+tokens/question 2944  seconds/question 38.76 (wall 876.4s)  degraded stages {'analysis': 9, 'rerank': 9, 'writer': 2}

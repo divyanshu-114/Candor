@@ -1,0 +1,6 @@
+[diagnostics] average tokens/question by stage (prompt+completion):
+         TOTAL:     0.0 tokens/question
+=== v2_holdout.jsonl on-final | n=25 | with answers | frozen=- | key=yes ===
+ANSWERS strict(rules) 0.560 (14/25)  abstained on answerable 2/19  FALSE-ANSWER rate on unanswerable 2/6 = 0.33
+ABSTENTION causes on answerable questions: a=1 b=1 c=0 d=0 e=0  (total 2)
+tokens/question 0  seconds/question 0.35 (wall 3.2s)  degraded stages none

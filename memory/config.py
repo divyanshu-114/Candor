@@ -167,7 +167,7 @@ USE_DATE_RESOLVER = os.environ.get("USE_DATE_RESOLVER", "false").lower() not in 
 DATE_AGENDA_CAP = int(os.environ.get("DATE_AGENDA_CAP", "12"))
 
 # --- Writer v2 (Phase 4): soft quote match, partial answers, version-chain hint, computed arithmetic ------------------
-WRITER_V2 = _bool("WRITER_V2", "false")
+WRITER_V2 = _bool("WRITER_V2", "true")
 QUOTE_SOFT_THRESHOLD = float(os.environ.get("QUOTE_SOFT_THRESHOLD", "0.85"))
 
 # --- Answer writer -----------------------------------------------------------
